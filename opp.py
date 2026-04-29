@@ -130,14 +130,9 @@ st.title("🤖 Mon Gym AI Agent")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(L["tabs"])
 
-# --- ONGLET 1 : PROFIL AVEC CALENDRIER ---
+# --- ONGLET 1 : PROFIL ---
 with tab1:
     st.header(L["prof_header"])
-    new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
-    if new_lang != st.session_state.lang:
-        st.session_state.lang = new_lang
-        st.rerun()
-
     prof = st.session_state.user_profile
     col_m1, col_m2, col_m3 = st.columns(3)
     col_m1.metric(L["weight"], f"{prof['poids']} lbs")
@@ -147,42 +142,15 @@ with tab1:
     st.write(f"**{L['name_field']} :** {prof['nom']} | **{L['height_field']} :** {prof['grandeur']}")
     st.warning(f"🩹 **{L['inj_field']} :** {prof['blessures']}")
 
-    # --- AJOUT DU CALENDRIER VISUEL ---
     st.divider()
-    st.subheader(L["cal_title"])
-    
-    today = date.today()
-    cal_obj = calendar.Calendar(firstweekday=6) # Dimanche début de semaine
-    month_days = cal_obj.monthdatescalendar(today.year, today.month)
-    
-    # Grille du calendrier
-    for week in month_days:
-        cols = st.columns(7)
-        for i, day in enumerate(week):
-            with cols[i]:
-                # Style pour le jour actuel
-                day_label = f"**{day.day}**" if day != today else f"**{day.day}** 🌟"
-                st.write(day_label)
-                
-                # Vérifier si des données existent pour ce jour
-                df_logs = pd.DataFrame(st.session_state.logs)
-                if not df_logs.empty:
-                    day_str = str(day)
-                    work_this_day = df_logs[df_logs['Date'] == day_str]
-                    if not work_this_day.empty:
-                        # Afficher les zones travaillées comme boutons
-                        zones_faites = work_this_day['Zone'].unique()
-                        for z in zones_faites:
-                            if st.button(z, key=f"prof_cal_{day}_{z}", use_container_width=True):
-                                st.session_state.selected_date_prof = day_str
 
-    # Affichage du détail si une zone a été cliquée
-    if 'selected_date_prof' in st.session_state:
-        st.info(f"{L['detail_title']} : {st.session_state.selected_date_prof}")
-        det_df = pd.DataFrame(st.session_state.logs)
-        st.table(det_df[det_df['Date'] == st.session_state.selected_date_prof][["Exercice", "Poids", "Reps"]])
-
+    # OPTION MODIFIER LE PROFIL (DÉPLACÉE ICI)
     with st.expander(L["edit_prof"]):
+        new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
+        if new_lang != st.session_state.lang:
+            st.session_state.lang = new_lang
+            st.rerun()
+            
         with st.form("edit_profile_form_complete"):
             n = st.text_input(L["name_field"], value=prof["nom"])
             c_f1, c_f2 = st.columns(2)
@@ -194,6 +162,35 @@ with tab1:
             if st.form_submit_button(L["save"]):
                 st.session_state.user_profile.update({"nom": n, "age": a, "grandeur": h, "poids": p, "objectif": obj, "blessures": b})
                 st.rerun()
+
+    # CALENDRIER VISUEL
+    st.subheader(L["cal_title"])
+    
+    today = date.today()
+    cal_obj = calendar.Calendar(firstweekday=6)
+    month_days = cal_obj.monthdatescalendar(today.year, today.month)
+    
+    for week in month_days:
+        cols = st.columns(7)
+        for i, day in enumerate(week):
+            with cols[i]:
+                day_label = f"**{day.day}**" if day != today else f"**{day.day}** 🌟"
+                st.write(day_label)
+                
+                df_logs = pd.DataFrame(st.session_state.logs)
+                if not df_logs.empty:
+                    day_str = str(day)
+                    work_this_day = df_logs[df_logs['Date'] == day_str]
+                    if not work_this_day.empty:
+                        zones_faites = work_this_day['Zone'].unique()
+                        for z in zones_faites:
+                            if st.button(z, key=f"prof_cal_{day}_{z}", use_container_width=True):
+                                st.session_state.selected_date_prof = day_str
+
+    if 'selected_date_prof' in st.session_state:
+        st.info(f"{L['detail_title']} : {st.session_state.selected_date_prof}")
+        det_df = pd.DataFrame(st.session_state.logs)
+        st.table(det_df[det_df['Date'] == st.session_state.selected_date_prof][["Exercice", "Poids", "Reps"]])
 
 # --- ONGLET 2 : SÉANCE DU JOUR ---
 with tab2:

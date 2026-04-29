@@ -68,7 +68,7 @@ languages = {
         "age_field": "Age",
         "height_field": "Height",
         "goals": ["Muscle Gain", "Fat Loss", "Strength", "Endurance"],
-        "voice_instruction": "🎙️ Click the mic button, speak, and AI fills everything automatically!",
+        "voice_instruction": "🎙️ Click the mic button, speak, and fields fill automatically!",
         "cal_title": "📅 Activity Calendar",
         "detail_title": "🔎 Workout Details"
     }
@@ -94,6 +94,7 @@ if 'texte_vocal' not in st.session_state: st.session_state.texte_vocal = ""
 if 'serie_zone' not in st.session_state: st.session_state.serie_zone = "Pectoraux"
 if 'serie_exercice' not in st.session_state: st.session_state.serie_exercice = ""
 if 'last_voice_input' not in st.session_state: st.session_state.last_voice_input = ""
+if 'last_voice_ts' not in st.session_state: st.session_state.last_voice_ts = 0
 
 chest_options = [
     "Développé couché", "Développé incliné", "Développé décliné",
@@ -204,14 +205,14 @@ with tab2:
     st.write(L["voice_instruction"])
 
     # Capturer la valeur du composant HTML
-    voice_data = st.components.v1.html("""
+    voice_data = st.components.v1.html(f"""
         <style>
-            .btn-container { display: flex; gap: 10px; }
-            #mic-btn { background-color: #ff4b4b; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; flex: 2; transition: 0.3s; }
-            #stop-btn { background-color: #333; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; flex: 1; display: none; transition: 0.3s; }
-            #mic-btn:hover { background-color: #e63939; }
-            #stop-btn:hover { background-color: #555; }
-            #result-box { margin-top: 10px; padding: 10px; background: #1e1e1e; color: #00ff88; border-radius: 8px; font-size: 15px; min-height: 40px; border: 1px solid #333; }
+            .btn-container {{ display: flex; gap: 10px; }}
+            #mic-btn {{ background-color: #ff4b4b; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; flex: 2; transition: 0.3s; }}
+            #stop-btn {{ background-color: #333; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; flex: 1; display: none; transition: 0.3s; }}
+            #mic-btn:hover {{ background-color: #e63939; }}
+            #stop-btn:hover {{ background-color: #555; }}
+            #result-box {{ margin-top: 10px; padding: 10px; background: #1e1e1e; color: #00ff88; border-radius: 8px; font-size: 15px; min-height: 40px; border: 1px solid #333; }}
         </style>
         <div class="btn-container">
             <button id="mic-btn" onclick="startListening()">🎙️ Dicter ma séance</button>
@@ -221,18 +222,21 @@ with tab2:
         <script>
         let recognition;
         let lastFinal = "";
+        let isListening = false;
         
-        function startListening() {
+        function startListening() {{
+            if (isListening) return;
             const btn = document.getElementById('mic-btn');
             const stopBtn = document.getElementById('stop-btn');
             const box = document.getElementById('result-box');
             
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {{
                 box.textContent = "❌ Ton navigateur ne supporte pas la reconnaissance vocale.";
                 return;
-            }
+            }}
 
-            btn.textContent = '🔴 Je t'écoute...';
+            isListening = true;
+            btn.textContent = '🔴 Je t\\'écoute...';
             btn.style.backgroundColor = '#222';
             stopBtn.style.display = 'block';
             lastFinal = "";
@@ -242,68 +246,76 @@ with tab2:
             recognition.interimResults = true;
             recognition.continuous = true;
 
-            recognition.onresult = function(event) {
+            recognition.onresult = function(event) {{
                 let interim_transcript = '';
                 let final_transcript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
+                for (let i = event.resultIndex; i < event.results.length; ++i) {{
+                    if (event.results[i].isFinal) {{
                         final_transcript += event.results[i][0].transcript;
-                    } else {
+                    }} else {{
                         interim_transcript += event.results[i][0].transcript;
-                    }
-                }
+                    }}
+                }}
                 if (final_transcript) lastFinal += final_transcript;
                 box.textContent = '🎤 ' + (lastFinal || interim_transcript);
-            };
+            }};
 
-            recognition.onerror = function(event) {
+            recognition.onerror = function(event) {{
                 box.textContent = "❌ Erreur : " + event.error;
                 resetUI();
-            };
+            }};
 
-            recognition.onend = function() {
-                resetUI();
-            };
+            recognition.onend = function() {{
+                if (isListening) resetUI();
+            }};
 
             recognition.start();
-        }
+        }}
 
-        function stopListening() {
-            if (recognition) {
+        function stopListening() {{
+            if (recognition && isListening) {{
+                isListening = false;
                 recognition.stop();
                 const box = document.getElementById('result-box');
                 const textToSend = lastFinal || box.textContent.replace('🎤 ', '');
-                if (textToSend && textToSend !== "En attente de ta voix...") {
-                    window.parent.postMessage({type: 'streamlit:setComponentValue', value: textToSend}, '*');
-                }
-            }
+                if (textToSend && textToSend !== "En attente de ta voix...") {{
+                    const payload = JSON.stringify({{text: textToSend, ts: Date.now()}});
+                    window.parent.postMessage({{type: 'streamlit:setComponentValue', value: payload}}, '*');
+                }}
+            }}
             resetUI();
-        }
+        }}
 
-        function resetUI() {
+        function resetUI() {{
+            isListening = false;
             const btn = document.getElementById('mic-btn');
             const stopBtn = document.getElementById('stop-btn');
             btn.textContent = '🎙️ Dicter ma séance';
             btn.style.backgroundColor = '#ff4b4b';
             stopBtn.style.display = 'none';
-        }
+        }}
         </script>
     """, height=130)
 
     # Logique de traitement automatique si une nouvelle voix est détectée
-    if voice_data and voice_data != st.session_state.get('last_voice_input', ''):
-        st.session_state.last_voice_input = voice_data
+    if voice_data:
         try:
-            with st.spinner("L'IA analyse ta voix..."):
-                data = analyser_texte_vocal(voice_data)
-                st.session_state.serie_zone = data.get("zone", "Pectoraux")
-                st.session_state.serie_exercice = data.get("exercice", "")
-                st.session_state.voice_poids = int(data.get("poids", 135))
-                st.session_state.voice_reps = int(data.get("reps", 8))
-                st.session_state.ai_message = data.get("message", "J'ai bien compris ta séance !")
-                st.rerun()
-        except Exception as e:
-            st.error(f"Erreur d'analyse vocale : {e}")
+            v_json = json.loads(voice_data)
+            v_text = v_json.get("text", "")
+            v_ts = v_json.get("ts", 0)
+            
+            if v_text and v_ts != st.session_state.get('last_voice_ts', 0):
+                st.session_state.last_voice_ts = v_ts
+                with st.spinner("L'IA analyse ta voix..."):
+                    data = analyser_texte_vocal(v_text)
+                    st.session_state.serie_zone = data.get("zone", "Pectoraux")
+                    st.session_state.serie_exercice = data.get("exercice", "")
+                    st.session_state.voice_poids = int(data.get("poids", 135))
+                    st.session_state.voice_reps = int(data.get("reps", 8))
+                    st.session_state.ai_message = data.get("message", "J'ai bien compris ta séance !")
+                    st.rerun()
+        except:
+            pass
 
     st.write("**💬 Ou écris ta séance ici :**")
     texte_input = st.text_input("Ex: J'ai fait du bench press à 200 lbs pour 12 reps", value="", key="texte_manual_input", placeholder="Parle-moi de ta séance...")

@@ -43,7 +43,7 @@ languages = {
         "age_field": "Âge",
         "height_field": "Grandeur",
         "goals": ["Prise de masse", "Perte de gras", "Force", "Endurance"],
-        "voice_instruction": "🎙️ Clique sur le bouton micro, parle, et l'IA remplit tout automatiquement !",
+        "voice_instruction": "🎙️ Clique sur le bouton micro, parle, et les champs se remplissent tout seuls !",
         "cal_title": "📅 Calendrier d'Activités",
         "detail_title": "🔎 Détail de la séance"
     },
@@ -103,7 +103,13 @@ chest_options = [
     "Pompes inclinées", "Pompes déclinées", "Dips (buste penché)",
     "Pullover haltère", "Pullover à la poulie", "Machine chest press"
 ]
-zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"]
+arm_options = [
+    "Curl barre EZ", "Curl haltères", "Curl marteau",
+    "Curl incliné", "Curl pupitre (Larry Scott)", "Curl concentration",
+    "Extension triceps poulie haute", "Barre au front", "Extension triceps haltère",
+    "Dips machine", "Pompes diamant", "Kickback haltère"
+]
+zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos", "Bras"]
 
 # ==========================================
 # 4. FONCTION ANALYSE IA
@@ -112,8 +118,9 @@ def analyser_texte_vocal(texte):
     prompt = f"""Tu es un assistant expert en musculation. Analyse la demande de l'utilisateur : "{texte}".
     Extraire les informations suivantes et répondre UNIQUEMENT en JSON valide.
     
-    Zones possibles : Pectoraux, Dos, Jambes, Épaules, Abdos.
+    Zones possibles : Pectoraux, Dos, Jambes, Épaules, Abdos, Bras.
     Si l'exercice concerne les pectoraux, choisis l'option la plus proche dans cette liste : {chest_options}.
+    Si l'exercice concerne les bras, choisis l'option la plus proche dans cette liste : {arm_options}.
     
     Clés JSON requises :
     - "zone": (string) La zone musculaire identifiée.
@@ -361,6 +368,9 @@ with tab2:
         if serie_zone == "Pectoraux":
             ex_index = chest_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in chest_options else 0
             serie_exercice = st.selectbox(L["ex_label"], chest_options, index=ex_index)
+        elif serie_zone == "Bras":
+            ex_index = arm_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in arm_options else 0
+            serie_exercice = st.selectbox(L["ex_label"], arm_options, index=ex_index)
         else:
             serie_exercice = st.text_input(L["ex_label"], value=st.session_state.serie_exercice)
 

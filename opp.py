@@ -15,8 +15,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-api_key_val = "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"
-client = openai.OpenAI(api_key=api_key_val)"
+api_key_val = "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"
+client = openai.OpenAI(api_key=api_key_val)
 
 # ==========================================
 # 2. SYSTÈME DE TRADUCTION

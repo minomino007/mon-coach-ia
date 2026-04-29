@@ -21,7 +21,13 @@ languages = {
         "reps": "Répétitions",
         "date_label": "Date de la séance",
         "zone_label": "Zone musculaire",
-        "ex_label": "Exercice spécifique"
+        "ex_label": "Exercice spécifique",
+        "name_field": "Nom",
+        "obj_field": "Objectif",
+        "inj_field": "Blessures / Notes",
+        "age_field": "Âge",
+        "height_field": "Grandeur",
+        "goals": ["Prise de masse", "Perte de gras", "Force", "Endurance"]
     },
     "English": {
         "tabs": ["📊 Profile", "🏋️ Workout", "👤 Guide", "🎥 Vision", "📅 Calendar"],
@@ -37,7 +43,13 @@ languages = {
         "reps": "Reps",
         "date_label": "Workout Date",
         "zone_label": "Muscle Zone",
-        "ex_label": "Specific Exercise"
+        "ex_label": "Specific Exercise",
+        "name_field": "Name",
+        "obj_field": "Goal",
+        "inj_field": "Injuries / Notes",
+        "age_field": "Age",
+        "height_field": "Height",
+        "goals": ["Muscle Gain", "Fat Loss", "Strength", "Endurance"]
     }
 }
 
@@ -52,7 +64,7 @@ if 'user_profile' not in st.session_state:
         "objectif": "Prise de masse", "poids": 205, "blessures": "Aucune", "niveau": "Intermédiaire"
     }
 
-# 4. LISTE DES 15 EXERCICES PECTORAUX
+# 4. LISTE DES EXERCICES PECTORAUX
 chest_options = [
     "Développé couché", "Développé incliné", "Développé décliné", 
     "Développé haltères", "Écarté couché", "Écarté incliné", 
@@ -69,10 +81,11 @@ st.title("🤖 Mon Gym AI Agent")
 # 5. ONGLETS
 tab1, tab2, tab3, tab4, tab5 = st.tabs(L["tabs"])
 
-# --- ONGLET 1 : PROFIL ---
+# --- ONGLET 1 : PROFIL (CORRECTION TRADUCTION) ---
 with tab1:
     st.header(L["prof_header"])
     
+    # Changement de langue
     new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
     if new_lang != st.session_state.lang:
         st.session_state.lang = new_lang
@@ -81,78 +94,42 @@ with tab1:
     prof = st.session_state.user_profile
     col_m1, col_m2, col_m3 = st.columns(3)
     col_m1.metric(L["weight"], f"{prof['poids']} lbs")
-    col_m2.metric("Objectif", prof['objectif'])
-    col_m3.metric("Âge", f"{prof['age']}")
+    col_m2.metric(L["obj_field"], prof['objectif'])
+    col_m3.metric(L["age_field"], f"{prof['age']}")
     
-    st.write(f"**Nom :** {prof['nom']} | **Grandeur :** {prof['grandeur']}")
-    st.warning(f"🩹 **Blessures :** {prof['blessures']}")
+    st.write(f"**{L['name_field']} :** {prof['nom']} | **{L['height_field']} :** {prof['grandeur']}")
+    st.warning(f"🩹 **{L['inj_field']} :** {prof['blessures']}")
 
     with st.expander(L["edit_prof"]):
         with st.form("edit_profile_final"):
-            n = st.text_input("Nom", value=prof["nom"])
-            p = st.number_input(L["weight"], value=prof["poids"])
-            obj = st.selectbox("Objectif", ["Prise de masse", "Perte de gras", "Force"], index=0)
-            b = st.text_area("Blessures", value=prof["blessures"])
+            n = st.text_input(L["name_field"], value=prof["nom"])
+            c_f1, c_f2 = st.columns(2)
+            a = c_f1.number_input(L["age_field"], value=prof["age"])
+            h = c_f2.text_input(L["height_field"], value=prof["grandeur"])
+            p = c_f1.number_input(L["weight"], value=prof["poids"])
+            obj = c_f2.selectbox(L["obj_field"], L["goals"])
+            b = st.text_area(L["inj_field"], value=prof["blessures"])
+            
             if st.form_submit_button(L["save"]):
-                st.session_state.user_profile.update({"nom": n, "poids": p, "objectif": obj, "blessures": b})
+                st.session_state.user_profile.update({
+                    "nom": n, "age": a, "grandeur": h, 
+                    "poids": p, "objectif": obj, "blessures": b
+                })
+                st.success("OK!")
                 st.rerun()
 
     if st.session_state.logs:
         df_evol = pd.DataFrame(st.session_state.logs)
         st.line_chart(df_evol.set_index("Date")["Poids"])
 
-# --- ONGLET 2 : SÉANCE (MULTI-SÉRIES + DATE + LISTE CHEST) ---
+# --- ONGLET 2 : SÉANCE ---
 with tab2:
     st.header(L["workout_header"])
     date_seance = st.date_input(L["date_label"], date.today())
     
     with st.form("add_set_form_final", clear_on_submit=True):
         zone = st.selectbox(L["zone_label"], ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"])
-        
         if zone == "Pectoraux":
             ex = st.selectbox(L["ex_label"], chest_options)
         else:
             ex = st.text_input("Exercice")
-            
-        col_w, col_r = st.columns(2)
-        w = col_w.number_input(L["weight"], value=135)
-        r = col_r.number_input(L["reps"], value=8)
-        
-        if st.form_submit_button(L["add_set"]):
-            st.session_state.temp_workout.append({
-                "Date": str(date_seance), "Zone": zone, "Exercice": ex, "Poids": w, "Reps": r
-            })
-
-    if st.session_state.temp_workout:
-        st.write("---")
-        st.dataframe(pd.DataFrame(st.session_state.temp_workout), use_container_width=True)
-        cb1, cb2 = st.columns(2)
-        if cb1.button(L["validate"], type="primary"):
-            st.session_state.logs.extend(st.session_state.temp_workout)
-            st.session_state.temp_workout = []
-            st.success("Enregistré !")
-            st.balloons()
-        if cb2.button(L["clear"]):
-            st.session_state.temp_workout = []
-            st.rerun()
-
-# --- ONGLET 3 : GUIDE ---
-with tab3:
-    st.header("👤 Guide Technique")
-    if st.button("Démonstration Pectoraux"):
-        st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
-
-# --- ONGLET 4 : VISION ---
-with tab4:
-    st.header("🎥 Vision IA")
-    up = st.file_uploader("Upload", type=["mp4", "mov"])
-    if up: st.video(up)
-
-# --- ONGLET 5 : CALENDRIER ---
-with tab5:
-    st.header("📅 Calendrier")
-    d_cal = st.date_input("Date", date.today(), key="cal_final_ver")
-    n_cal = st.text_area("Note", value=st.session_state.notes_calendrier.get(str(d_cal), ""))
-    if st.button(L["save"], key="save_note_cal"):
-        st.session_state.notes_calendrier[str(d_cal)] = n_cal
-        st.success("Note ok !")

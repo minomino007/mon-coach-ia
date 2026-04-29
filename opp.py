@@ -15,17 +15,15 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Récupération sécurisée de la clé via les Secrets ou la variable directe
-if "OPENAI_API_KEY" in st.secrets:
-    api_key_val = st.secrets["OPENAI_API_KEY"]
-else:
-    # Clé de secours (celle que tu m'as fournie)
-    api_key_val = "sk-proj-7_R7-BvF7H_OaE5G-iNqXm8G-1N4"
+# Utilisation de la clé fournie par l'utilisateur
+# Note : Toujours s'assurer que la clé est complète et active sur platform.openai.com
+api_key_val = "sk-proj-7_R7-BvF7H_OaE5G-iNqXm8G-1N4"
 
+# Initialisation du client avec la clé en dur pour garantir la connexion
 client = openai.OpenAI(api_key=api_key_val)
 
 # ==========================================
-# 2. SYSTÈME DE TRADUCTION COMPLET
+# 2. SYSTÈME DE TRADUCTION COMPLET (AUCUN RÉSUMÉ)
 # ==========================================
 languages = {
     "Français": {
@@ -162,7 +160,7 @@ with tab1:
 with tab2:
     st.header(L["workout_header"])
     st.write(L["voice_instruction"])
-    audio_record = mic_recorder(start_prompt="🔴 Commencer l'enregistrement", stop_prompt="🟢 Analyser ma séance", key="gym_mic_fixed_v3")
+    audio_record = mic_recorder(start_prompt="🔴 Commencer l'enregistrement", stop_prompt="🟢 Analyser ma séance", key="gym_mic_final_v4")
 
     if audio_record:
         try:
@@ -177,7 +175,7 @@ with tab2:
                 })
                 st.success(f"Entendu : {texte_brut}")
         except Exception as e:
-            st.error(f"Erreur d'analyse : {e}")
+            st.error(f"Erreur d'analyse : {e}. Vérifie que ta clé est bien active sur OpenAI.")
 
     st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")

@@ -133,10 +133,50 @@ abs_options = [
 ]
 zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos", "Bras"]
 
+# Dictionnaire des vidéos par exercice (Liens YouTube courts et efficaces)
+exercise_videos = {
+    "Développé couché": "https://www.youtube.com/watch?v=rT7DgCr-3pg",
+    "Développé incliné": "https://www.youtube.com/watch?v=SrqOu55lrYU",
+    "Développé décliné": "https://www.youtube.com/watch?v=LfyQBUKR8SE",
+    "Développé haltères": "https://www.youtube.com/watch?v=VmB1G1K7v94",
+    "Écarté couché": "https://www.youtube.com/watch?v=eozdVDA78K0",
+    "Pec deck (machine )": "https://www.youtube.com/watch?v=O-OnN_6Xp_Y",
+    "Pompes": "https://www.youtube.com/watch?v=IODxDxX7oi4",
+    "Dips (buste penché )": "https://www.youtube.com/watch?v=2z8JmcrW-As",
+    "Tractions": "https://www.youtube.com/watch?v=eGo4IYlbE5g",
+    "Tirage poitrine poulie haute": "https://www.youtube.com/watch?v=CAwf7n6Luuc",
+    "Tirage horizontal poulie basse": "https://www.youtube.com/watch?v=GZbfZ033f74",
+    "Rowing barre": "https://www.youtube.com/watch?v=9efgcAjQe7E",
+    "Rowing haltère": "https://www.youtube.com/watch?v=dFzUjzfih7k",
+    "Soulevé de terre": "https://www.youtube.com/watch?v=ytGaGIn3SjE",
+    "Squat barre": "https://www.youtube.com/watch?v=SW_C1A-rejs",
+    "Presse à cuisses": "https://www.youtube.com/watch?v=IZxyjW7MPJQ",
+    "Fentes haltères": "https://www.youtube.com/watch?v=D7KaRcUTQeE",
+    "Leg extension": "https://www.youtube.com/watch?v=YyvSfVLYd80",
+    "Leg curl assis": "https://www.youtube.com/watch?v=ELOCsoDSmrg",
+    "Mollets debout": "https://www.youtube.com/watch?v=-M4-G8p8fmc",
+    "Développé militaire": "https://www.youtube.com/watch?v=2yjwxt_4Qko",
+    "Développé haltères": "https://www.youtube.com/watch?v=qEwKCR5JCog",
+    "Élévations latérales": "https://www.youtube.com/watch?v=3VcKaXpzqRo",
+    "Oiseau haltères": "https://www.youtube.com/watch?v=6yMdhi2DVao",
+    "Face pull": "https://www.youtube.com/watch?v=rep-qVOkqgk",
+    "Curl barre EZ": "https://www.youtube.com/watch?v=2CT1nE_X_S0",
+    "Curl haltères": "https://www.youtube.com/watch?v=ykJgrLQ_ixQ",
+    "Curl marteau": "https://www.youtube.com/watch?v=7jqi2qWAUzQ",
+    "Extension triceps poulie haute": "https://www.youtube.com/watch?v=2-LAMcpzODU",
+    "Barre au front": "https://www.youtube.com/watch?v=d_KZx7p_DjI",
+    "Dips machine": "https://www.youtube.com/watch?v=6kALZikcIc0",
+    "Crunch au sol": "https://www.youtube.com/watch?v=Xyd_fa5zoEU",
+    "Relevé de jambes": "https://www.youtube.com/watch?v=l4kQd9eWclE",
+    "Planche (gainage )": "https://www.youtube.com/watch?v=pSHjTRCQxIw",
+    "Russian twist": "https://www.youtube.com/watch?v=wkD8rjkS_Rs",
+    "Roulette à abdos": "https://www.youtube.com/watch?v=rqiQtEW_v_I"
+}
+
 # ==========================================
 # 4. FONCTION ANALYSE IA
 # ==========================================
-def analyser_texte_vocal(texte):
+def analyser_texte_vocal(texte ):
     prompt = f"""Tu es un assistant expert en musculation. Analyse la demande de l'utilisateur : "{texte}".
     Extraire les informations suivantes et répondre UNIQUEMENT en JSON valide.
     
@@ -238,7 +278,6 @@ with tab2:
     st.header(L["workout_header"])
     st.write(L["voice_instruction"])
 
-    # Capturer la valeur du composant HTML
     voice_data = st.components.v1.html(f"""
         <style>
             .btn-container {{ display: flex; gap: 10px; }}
@@ -333,7 +372,6 @@ with tab2:
         </script>
     """, height=130)
 
-    # Logique de traitement automatique si une nouvelle voix est détectée
     if voice_data:
         try:
             v_json = json.loads(voice_data)
@@ -468,7 +506,9 @@ with tab3:
             with st.expander(f"📖 {ex}"):
                 st.write(f"Voici comment réaliser correctement l'exercice : **{ex}**.")
                 st.info("💡 Conseil : Garde une forme stricte et contrôle la charge.")
-                st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y" )
+                
+                video_url = exercise_videos.get(ex, "https://www.youtube.com/watch?v=gRVjAtPip0Y" )
+                st.video(video_url)
 
 # --- ONGLET 4 : VISION IA ---
 with tab4: 

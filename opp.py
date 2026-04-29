@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 import openai
-from streamlit_mic_recorder import mic_recorder
 import json
 
 # ==========================================
@@ -43,7 +42,7 @@ languages = {
         "age_field": "Âge",
         "height_field": "Grandeur",
         "goals": ["Prise de masse", "Perte de gras", "Force", "Endurance"],
-        "voice_instruction": "🎙️ **Commande Vocale** : Dis 'Pectoraux, développé couché, 180 lbs, 10 reps'."
+        "voice_instruction": "🎙️ Clique sur le bouton micro, parle, et les champs se remplissent tout seuls !"
     },
     "English": {
         "tabs": ["📊 Profile", "🏋️ Today's Workout", "👤 Guide", "🎥 Vision", "📅 Calendar"],
@@ -66,7 +65,7 @@ languages = {
         "age_field": "Age",
         "height_field": "Height",
         "goals": ["Muscle Gain", "Fat Loss", "Strength", "Endurance"],
-        "voice_instruction": "🎙️ **Voice Command**: Say 'Chest, bench press, 180 lbs, 10 reps'."
+        "voice_instruction": "🎙️ Click the mic button, speak, and fields fill automatically!"
     }
 }
 
@@ -82,13 +81,11 @@ if 'user_profile' not in st.session_state:
         "nom": "Athlète", "age": 25, "grandeur": "5'10",
         "objectif": "Prise de masse", "poids": 205, "blessures": "Aucune", "niveau": "Intermédiaire"
     }
-
-# ✅ NOUVEAU : mémoire pour les champs pré-remplis par la voix
 if 'voice_zone' not in st.session_state: st.session_state.voice_zone = "Pectoraux"
 if 'voice_exercice' not in st.session_state: st.session_state.voice_exercice = ""
 if 'voice_poids' not in st.session_state: st.session_state.voice_poids = 135
 if 'voice_reps' not in st.session_state: st.session_state.voice_reps = 8
-if 'voice_ready' not in st.session_state: st.session_state.voice_ready = False
+if 'texte_vocal' not in st.session_state: st.session_state.texte_vocal = ""
 
 chest_options = [
     "Développé couché", "Développé incliné", "Développé décliné",
@@ -97,30 +94,25 @@ chest_options = [
     "Pompes inclinées", "Pompes déclinées", "Dips (buste penché)",
     "Pullover haltère", "Pullover à la poulie", "Machine chest press"
 ]
-
 zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"]
 
 # ==========================================
-# 4. FONCTION ANALYSE VOCALE
+# 4. FONCTION ANALYSE TEXTE VOCAL
 # ==========================================
-def extraire_donnees_seance(audio_bytes):
-    with open("temp_audio.wav", "wb") as f:
-        f.write(audio_bytes)
-
-    with open("temp_audio.wav", "rb") as audio_file:
-        transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
-        texte = transcript.text
-
+def analyser_texte_vocal(texte):
     prompt = f"""Extraire les infos de musculation du texte suivant : "{texte}". 
-    Répondre UNIQUEMENT en JSON avec ces clés : zone, exercice, poids (nombre), reps (nombre).
+    Répondre UNIQUEMENT en JSON valide avec ces clés : zone, exercice, poids (nombre entier), reps (nombre entier).
     Zones possibles : Pectoraux, Dos, Jambes, Épaules, Abdos.
-    Si l'exercice est pour les pectoraux, utilise un nom de cette liste : {chest_options}"""
+    Si l'exercice est pour les pectoraux, utilise un nom de cette liste : {chest_options}
+    Exemple de réponse : {{"zone": "Pectoraux", "exercice": "Développé couché", "poids": 180, "reps": 10}}"""
 
     response = client.chat.completions.create(
         model="openai/gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}]
     )
-    return json.loads(response.choices[0].message.content), texte
+    contenu = response.choices[0].message.content
+    contenu = contenu.strip().replace("```json", "").replace("```", "").strip()
+    return json.loads(contenu)
 
 L = languages[st.session_state.lang]
 
@@ -166,52 +158,102 @@ with tab2:
     st.header(L["workout_header"])
     st.write(L["voice_instruction"])
 
-    # 🎙️ Microphone
-    audio_record = mic_recorder(
-        start_prompt="🔴 Commencer l'enregistrement",
-        stop_prompt="🟢 Analyser ma séance",
-        key="gym_mic_final_v4"
+    # ✅ BOUTON MICRO — utilise la reconnaissance vocale du navigateur (100% gratuit)
+    st.components.v1.html("""
+        <style>
+            #mic-btn {
+                background-color: #ff4b4b;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                font-size: 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                margin-bottom: 10px;
+            }
+            #mic-btn:hover { background-color: #cc0000; }
+            #result-box {
+                margin-top: 10px;
+                padding: 10px;
+                background: #1e1e1e;
+                color: #00ff88;
+                border-radius: 8px;
+                font-size: 15px;
+                min-height: 40px;
+            }
+        </style>
+        <button id="mic-btn" onclick="startListening()">🎙️ Parler</button>
+        <div id="result-box">En attente...</div>
+
+        <script>
+        function startListening() {
+            const btn = document.getElementById('mic-btn');
+            const box = document.getElementById('result-box');
+            btn.textContent = '🔴 Écoute en cours...';
+            btn.style.backgroundColor = '#888';
+
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'fr-FR';
+            recognition.interimResults = false;
+
+            recognition.onresult = function(event) {
+                const texte = event.results[0][0].transcript;
+                box.textContent = '✅ Entendu : ' + texte;
+                btn.textContent = '🎙️ Parler';
+                btn.style.backgroundColor = '#ff4b4b';
+
+                // Envoie le texte à Streamlit
+                window.parent.postMessage({type: 'streamlit:setComponentValue', value: texte}, '*');
+            };
+
+            recognition.onerror = function(e) {
+                box.textContent = '❌ Erreur : ' + e.error;
+                btn.textContent = '🎙️ Parler';
+                btn.style.backgroundColor = '#ff4b4b';
+            };
+
+            recognition.start();
+        }
+        </script>
+    """, height=120)
+
+    # Champ texte pour entrer la commande vocale manuellement aussi
+    st.write("**Ou écris ta séance directement ici :**")
+    texte_input = st.text_input(
+        "Ex: Pectoraux, développé couché, 180 lbs, 10 reps",
+        value=st.session_state.texte_vocal,
+        key="texte_vocal_input"
     )
 
-    # ✅ NOUVEAU : après analyse vocale, on remplit les champs automatiquement
-    if audio_record:
-        try:
-            with st.spinner("L'IA analyse votre voix..."):
-                data, texte_brut = extraire_donnees_seance(audio_record['bytes'])
-
-                # On sauvegarde les valeurs détectées dans la mémoire
-                zone_detectee = data.get("zone", "Pectoraux")
-                if zone_detectee in zones_disponibles:
-                    st.session_state.voice_zone = zone_detectee
-                st.session_state.voice_exercice = data.get("exercice", "")
-                st.session_state.voice_poids = int(data.get("poids", 135))
-                st.session_state.voice_reps = int(data.get("reps", 8))
-                st.session_state.voice_ready = True
-
-                st.success(f"✅ Entendu : *{texte_brut}*")
-                st.info(f"🎯 Détecté → Zone : **{st.session_state.voice_zone}** | Exercice : **{st.session_state.voice_exercice}** | Poids : **{st.session_state.voice_poids} lbs** | Reps : **{st.session_state.voice_reps}**")
-
-        except Exception as e:
-            st.error(f"Erreur d'analyse : {e}")
+    if st.button("🤖 Analyser", type="primary"):
+        if texte_input:
+            try:
+                with st.spinner("L'IA analyse..."):
+                    data = analyser_texte_vocal(texte_input)
+                    zone_detectee = data.get("zone", "Pectoraux")
+                    if zone_detectee in zones_disponibles:
+                        st.session_state.voice_zone = zone_detectee
+                    st.session_state.voice_exercice = data.get("exercice", "")
+                    st.session_state.voice_poids = int(data.get("poids", 135))
+                    st.session_state.voice_reps = int(data.get("reps", 8))
+                    st.success(f"✅ Zone : **{st.session_state.voice_zone}** | Exercice : **{st.session_state.voice_exercice}** | Poids : **{st.session_state.voice_poids} lbs** | Reps : **{st.session_state.voice_reps}**")
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Erreur : {e}")
 
     st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
 
-    # ✅ NOUVEAU : le formulaire utilise les valeurs vocales si disponibles
     with st.form("add_set_form_final", clear_on_submit=True):
-
-        # Zone : pré-sélectionnée par la voix
         zone_index = zones_disponibles.index(st.session_state.voice_zone) if st.session_state.voice_zone in zones_disponibles else 0
         zone = st.selectbox(L["zone_label"], zones_disponibles, index=zone_index)
 
-        # Exercice : pré-rempli par la voix
         if zone == "Pectoraux":
             ex_index = chest_options.index(st.session_state.voice_exercice) if st.session_state.voice_exercice in chest_options else 0
             ex = st.selectbox(L["ex_label"], chest_options, index=ex_index)
         else:
             ex = st.text_input(L["ex_label"], value=st.session_state.voice_exercice)
 
-        # Poids et Reps : pré-remplis par la voix
         col_w, col_r = st.columns(2)
         w_input = col_w.number_input(L["weight"], value=st.session_state.voice_poids)
         r_input = col_r.number_input(L["reps"], value=st.session_state.voice_reps)
@@ -224,11 +266,9 @@ with tab2:
                 "Poids": w_input,
                 "Reps": r_input
             })
-            # On remet à zéro les valeurs vocales après ajout
             st.session_state.voice_ready = False
             st.rerun()
 
-    # Liste des séries en attente
     if st.session_state.temp_workout:
         st.subheader("Séries temporaires")
         st.dataframe(pd.DataFrame(st.session_state.temp_workout), use_container_width=True)

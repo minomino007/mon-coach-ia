@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-api_key_val = "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"
+api_key_val = st.secrets["OPENAI_API_KEY"]
 client = openai.OpenAI(api_key=api_key_val)
 
 # ==========================================

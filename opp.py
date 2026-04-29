@@ -109,6 +109,28 @@ arm_options = [
     "Extension triceps poulie haute", "Barre au front", "Extension triceps haltère",
     "Dips machine", "Pompes diamant", "Kickback haltère"
 ]
+back_options = [
+    "Tractions", "Tirage poitrine poulie haute", "Tirage horizontal poulie basse",
+    "Rowing barre", "Rowing haltère", "Tirage bûcheron",
+    "Pull-over poulie haute", "Lombaires (banc)", "Soulevé de terre",
+    "Shrugs haltères", "Tirage vertical prise serrée"
+]
+leg_options = [
+    "Squat barre", "Presse à cuisses", "Fentes haltères",
+    "Leg extension", "Leg curl assis", "Leg curl allongé",
+    "Hack squat", "Soulevé de terre jambes tendues", "Mollets debout",
+    "Mollets assis", "Adducteurs machine"
+]
+shoulder_options = [
+    "Développé militaire", "Développé haltères", "Élévations latérales",
+    "Oiseau haltères", "Tirage menton", "Développé Arnold",
+    "Face pull", "Élévations frontales"
+]
+abs_options = [
+    "Crunch au sol", "Relevé de jambes", "Planche (gainage)",
+    "Russian twist", "Crunch poulie haute", "Roulette à abdos",
+    "Mountain climbers", "V-ups"
+]
 zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos", "Bras"]
 
 # ==========================================
@@ -119,8 +141,13 @@ def analyser_texte_vocal(texte):
     Extraire les informations suivantes et répondre UNIQUEMENT en JSON valide.
     
     Zones possibles : Pectoraux, Dos, Jambes, Épaules, Abdos, Bras.
-    Si l'exercice concerne les pectoraux, choisis l'option la plus proche dans cette liste : {chest_options}.
-    Si l'exercice concerne les bras, choisis l'option la plus proche dans cette liste : {arm_options}.
+    Choisis l'option la plus proche dans ces listes selon la zone :
+    - Pectoraux: {chest_options}
+    - Bras: {arm_options}
+    - Dos: {back_options}
+    - Jambes: {leg_options}
+    - Épaules: {shoulder_options}
+    - Abdos: {abs_options}
     
     Clés JSON requises :
     - "zone": (string) La zone musculaire identifiée.
@@ -371,6 +398,18 @@ with tab2:
         elif serie_zone == "Bras":
             ex_index = arm_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in arm_options else 0
             serie_exercice = st.selectbox(L["ex_label"], arm_options, index=ex_index)
+        elif serie_zone == "Dos":
+            ex_index = back_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in back_options else 0
+            serie_exercice = st.selectbox(L["ex_label"], back_options, index=ex_index)
+        elif serie_zone == "Jambes":
+            ex_index = leg_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in leg_options else 0
+            serie_exercice = st.selectbox(L["ex_label"], leg_options, index=ex_index)
+        elif serie_zone == "Épaules":
+            ex_index = shoulder_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in shoulder_options else 0
+            serie_exercice = st.selectbox(L["ex_label"], shoulder_options, index=ex_index)
+        elif serie_zone == "Abdos":
+            ex_index = abs_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in abs_options else 0
+            serie_exercice = st.selectbox(L["ex_label"], abs_options, index=ex_index)
         else:
             serie_exercice = st.text_input(L["ex_label"], value=st.session_state.serie_exercice)
 

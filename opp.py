@@ -27,7 +27,7 @@ languages = {
         "edit_prof": "Modifier le profil",
         "save": "Sauvegarder",
         "workout_header": "🏋️ Enregistrer une séance",
-        "add_set": "➕ Ajouter la série",
+        "add_set": "➕ Ajouter cette série",
         "validate": "✅ Enregistrer l'entraînement complet",
         "clear": "❌ Tout effacer",
         "lang_label": "Choisir la langue",
@@ -50,7 +50,7 @@ languages = {
         "edit_prof": "Edit Profile",
         "save": "Save",
         "workout_header": "🏋️ Log a Workout",
-        "add_set": "➕ Add Set",
+        "add_set": "➕ Add This Set",
         "validate": "✅ Save Full Workout",
         "clear": "❌ Clear All",
         "lang_label": "Choose Language",
@@ -86,6 +86,8 @@ if 'voice_exercice' not in st.session_state: st.session_state.voice_exercice = "
 if 'voice_poids' not in st.session_state: st.session_state.voice_poids = 135
 if 'voice_reps' not in st.session_state: st.session_state.voice_reps = 8
 if 'texte_vocal' not in st.session_state: st.session_state.texte_vocal = ""
+if 'serie_zone' not in st.session_state: st.session_state.serie_zone = "Pectoraux"
+if 'serie_exercice' not in st.session_state: st.session_state.serie_exercice = ""
 
 chest_options = [
     "Développé couché", "Développé incliné", "Développé décliné",
@@ -158,7 +160,7 @@ with tab2:
     st.header(L["workout_header"])
     st.write(L["voice_instruction"])
 
-    # ✅ BOUTON MICRO — utilise la reconnaissance vocale du navigateur (100% gratuit)
+    # 🎙️ BOUTON MICRO NAVIGATEUR
     st.components.v1.html("""
         <style>
             #mic-btn {
@@ -184,40 +186,33 @@ with tab2:
         </style>
         <button id="mic-btn" onclick="startListening()">🎙️ Parler</button>
         <div id="result-box">En attente...</div>
-
         <script>
         function startListening() {
             const btn = document.getElementById('mic-btn');
             const box = document.getElementById('result-box');
             btn.textContent = '🔴 Écoute en cours...';
             btn.style.backgroundColor = '#888';
-
             const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             recognition.lang = 'fr-FR';
             recognition.interimResults = false;
-
             recognition.onresult = function(event) {
                 const texte = event.results[0][0].transcript;
                 box.textContent = '✅ Entendu : ' + texte;
                 btn.textContent = '🎙️ Parler';
                 btn.style.backgroundColor = '#ff4b4b';
-
-                // Envoie le texte à Streamlit
                 window.parent.postMessage({type: 'streamlit:setComponentValue', value: texte}, '*');
             };
-
             recognition.onerror = function(e) {
                 box.textContent = '❌ Erreur : ' + e.error;
                 btn.textContent = '🎙️ Parler';
                 btn.style.backgroundColor = '#ff4b4b';
             };
-
             recognition.start();
         }
         </script>
     """, height=120)
 
-    # Champ texte pour entrer la commande vocale manuellement aussi
+    # Champ texte + bouton analyser
     st.write("**Ou écris ta séance directement ici :**")
     texte_input = st.text_input(
         "Ex: Pectoraux, développé couché, 180 lbs, 10 reps",
@@ -233,7 +228,9 @@ with tab2:
                     zone_detectee = data.get("zone", "Pectoraux")
                     if zone_detectee in zones_disponibles:
                         st.session_state.voice_zone = zone_detectee
+                        st.session_state.serie_zone = zone_detectee
                     st.session_state.voice_exercice = data.get("exercice", "")
+                    st.session_state.serie_exercice = data.get("exercice", "")
                     st.session_state.voice_poids = int(data.get("poids", 135))
                     st.session_state.voice_reps = int(data.get("reps", 8))
                     st.success(f"✅ Zone : **{st.session_state.voice_zone}** | Exercice : **{st.session_state.voice_exercice}** | Poids : **{st.session_state.voice_poids} lbs** | Reps : **{st.session_state.voice_reps}**")
@@ -244,33 +241,61 @@ with tab2:
     st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
 
-    with st.form("add_set_form_final", clear_on_submit=True):
-        zone_index = zones_disponibles.index(st.session_state.voice_zone) if st.session_state.voice_zone in zones_disponibles else 0
-        zone = st.selectbox(L["zone_label"], zones_disponibles, index=zone_index)
+    # ✅ ÉTAPE 1 — Choisir la zone et l'exercice UNE SEULE FOIS
+    st.subheader("📌 Étape 1 — Choisir l'exercice")
+    col_z, col_e = st.columns(2)
 
-        if zone == "Pectoraux":
-            ex_index = chest_options.index(st.session_state.voice_exercice) if st.session_state.voice_exercice in chest_options else 0
-            ex = st.selectbox(L["ex_label"], chest_options, index=ex_index)
+    with col_z:
+        zone_index = zones_disponibles.index(st.session_state.serie_zone) if st.session_state.serie_zone in zones_disponibles else 0
+        serie_zone = st.selectbox(L["zone_label"], zones_disponibles, index=zone_index, key="select_zone_serie")
+
+    with col_e:
+        if serie_zone == "Pectoraux":
+            ex_index = chest_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in chest_options else 0
+            serie_exercice = st.selectbox(L["ex_label"], chest_options, index=ex_index, key="select_ex_serie")
         else:
-            ex = st.text_input(L["ex_label"], value=st.session_state.voice_exercice)
+            serie_exercice = st.text_input(L["ex_label"], value=st.session_state.serie_exercice, key="input_ex_serie")
 
+    # Sauvegarder la zone et exercice choisis
+    st.session_state.serie_zone = serie_zone
+    st.session_state.serie_exercice = serie_exercice
+
+    st.divider()
+
+    # ✅ ÉTAPE 2 — Ajouter les séries une par une
+    st.subheader("📋 Étape 2 — Ajouter tes séries")
+
+    # Afficher les séries déjà ajoutées pour cet exercice
+    series_actuelles = [s for s in st.session_state.temp_workout if s["Exercice"] == serie_exercice]
+    if series_actuelles:
+        for i, s in enumerate(series_actuelles):
+            st.write(f"✅ **Série {i+1}** — {s['Poids']} lbs × {s['Reps']} reps")
+
+    # Formulaire pour ajouter UNE série
+    num_serie = len(series_actuelles) + 1
+    st.write(f"**➕ Série {num_serie} :**")
+
+    with st.form(f"serie_form_{num_serie}", clear_on_submit=True):
         col_w, col_r = st.columns(2)
-        w_input = col_w.number_input(L["weight"], value=st.session_state.voice_poids)
-        r_input = col_r.number_input(L["reps"], value=st.session_state.voice_reps)
+        w_input = col_w.number_input(L["weight"], value=st.session_state.voice_poids, key=f"w_{num_serie}")
+        r_input = col_r.number_input(L["reps"], value=st.session_state.voice_reps, key=f"r_{num_serie}")
 
-        if st.form_submit_button(L["add_set"]):
+        if st.form_submit_button(f"➕ Ajouter Série {num_serie}"):
             st.session_state.temp_workout.append({
                 "Date": str(date_seance),
-                "Zone": zone,
-                "Exercice": ex,
+                "Zone": st.session_state.serie_zone,
+                "Exercice": st.session_state.serie_exercice,
+                "Série": num_serie,
                 "Poids": w_input,
                 "Reps": r_input
             })
-            st.session_state.voice_ready = False
             st.rerun()
 
+    st.divider()
+
+    # ✅ TABLEAU COMPLET + BOUTONS SAUVEGARDER / EFFACER
     if st.session_state.temp_workout:
-        st.subheader("Séries temporaires")
+        st.subheader("📊 Toutes tes séries")
         st.dataframe(pd.DataFrame(st.session_state.temp_workout), use_container_width=True)
         cb1, cb2 = st.columns(2)
         if cb1.button(L["validate"], type="primary"):
@@ -301,7 +326,7 @@ with tab5:
     if not df_global.empty:
         seance_du_jour = df_global[df_global['Date'] == str(d_cal)]
         if not seance_du_jour.empty:
-            st.table(seance_du_jour[["Zone", "Exercice", "Poids", "Reps"]])
+            st.table(seance_du_jour[["Zone", "Exercice", "Série", "Poids", "Reps"]])
 
     st.divider()
     n_cal = st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""))

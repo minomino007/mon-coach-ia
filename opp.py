@@ -140,37 +140,66 @@ exercise_videos = {
     "Développé décliné": "https://www.youtube.com/watch?v=LfyQBUKR8SE",
     "Développé haltères": "https://www.youtube.com/watch?v=VmB1G1K7v94",
     "Écarté couché": "https://www.youtube.com/watch?v=eozdVDA78K0",
+    "Écarté incliné": "https://www.youtube.com/watch?v=8iPEnT_v9vM",
     "Pec deck (machine )": "https://www.youtube.com/watch?v=O-OnN_6Xp_Y",
+    "Cross-over à la poulie": "https://www.youtube.com/watch?v=Wp4p66Lnu_4",
     "Pompes": "https://www.youtube.com/watch?v=IODxDxX7oi4",
+    "Pompes inclinées": "https://www.youtube.com/watch?v=4pS_6-N4ZfM",
+    "Pompes déclinées": "https://www.youtube.com/watch?v=SKPab2z8qhA",
     "Dips (buste penché )": "https://www.youtube.com/watch?v=2z8JmcrW-As",
+    "Pullover haltère": "https://www.youtube.com/watch?v=FK4rHfWtuac",
+    "Pullover à la poulie": "https://www.youtube.com/watch?v=p9S_0vY_n-Y",
+    "Machine chest press": "https://www.youtube.com/watch?v=nw9p_Z_3WpE",
     "Tractions": "https://www.youtube.com/watch?v=eGo4IYlbE5g",
     "Tirage poitrine poulie haute": "https://www.youtube.com/watch?v=CAwf7n6Luuc",
     "Tirage horizontal poulie basse": "https://www.youtube.com/watch?v=GZbfZ033f74",
     "Rowing barre": "https://www.youtube.com/watch?v=9efgcAjQe7E",
     "Rowing haltère": "https://www.youtube.com/watch?v=dFzUjzfih7k",
+    "Tirage bûcheron": "https://www.youtube.com/watch?v=dFzUjzfih7k",
+    "Pull-over poulie haute": "https://www.youtube.com/watch?v=p9S_0vY_n-Y",
+    "Lombaires (banc )": "https://www.youtube.com/watch?v=5_EjZ7Xv_6E",
     "Soulevé de terre": "https://www.youtube.com/watch?v=ytGaGIn3SjE",
+    "Shrugs haltères": "https://www.youtube.com/watch?v=g6qbq4i1_hQ",
+    "Tirage vertical prise serrée": "https://www.youtube.com/watch?v=CAwf7n6Luuc",
     "Squat barre": "https://www.youtube.com/watch?v=SW_C1A-rejs",
     "Presse à cuisses": "https://www.youtube.com/watch?v=IZxyjW7MPJQ",
     "Fentes haltères": "https://www.youtube.com/watch?v=D7KaRcUTQeE",
     "Leg extension": "https://www.youtube.com/watch?v=YyvSfVLYd80",
     "Leg curl assis": "https://www.youtube.com/watch?v=ELOCsoDSmrg",
+    "Leg curl allongé": "https://www.youtube.com/watch?v=1Tq3QdAU0P0",
+    "Hack squat": "https://www.youtube.com/watch?v=0tn5K9NlCfo",
+    "Soulevé de terre jambes tendues": "https://www.youtube.com/watch?v=ytGaGIn3SjE",
     "Mollets debout": "https://www.youtube.com/watch?v=-M4-G8p8fmc",
+    "Mollets assis": "https://www.youtube.com/watch?v=JbyjN744z9w",
+    "Adducteurs machine": "https://www.youtube.com/watch?v=S_7u6_Tf9fA",
     "Développé militaire": "https://www.youtube.com/watch?v=2yjwxt_4Qko",
     "Développé haltères": "https://www.youtube.com/watch?v=qEwKCR5JCog",
     "Élévations latérales": "https://www.youtube.com/watch?v=3VcKaXpzqRo",
     "Oiseau haltères": "https://www.youtube.com/watch?v=6yMdhi2DVao",
+    "Tirage menton": "https://www.youtube.com/watch?v=ak3R7lYI7zE",
+    "Développé Arnold": "https://www.youtube.com/watch?v=6mc7nm9igT4",
     "Face pull": "https://www.youtube.com/watch?v=rep-qVOkqgk",
+    "Élévations frontales": "https://www.youtube.com/watch?v=-t7fuZ0KhDA",
     "Curl barre EZ": "https://www.youtube.com/watch?v=2CT1nE_X_S0",
     "Curl haltères": "https://www.youtube.com/watch?v=ykJgrLQ_ixQ",
     "Curl marteau": "https://www.youtube.com/watch?v=7jqi2qWAUzQ",
+    "Curl incliné": "https://www.youtube.com/watch?v=aTYlqC_JacQ",
+    "Curl pupitre (Larry Scott )": "https://www.youtube.com/watch?v=fIWP-FRFNU0",
+    "Curl concentration": "https://www.youtube.com/watch?v=0AUGkch3tzc",
     "Extension triceps poulie haute": "https://www.youtube.com/watch?v=2-LAMcpzODU",
     "Barre au front": "https://www.youtube.com/watch?v=d_KZx7p_DjI",
+    "Extension triceps haltère": "https://www.youtube.com/watch?v=6SS6K3lAwZ8",
     "Dips machine": "https://www.youtube.com/watch?v=6kALZikcIc0",
+    "Pompes diamant": "https://www.youtube.com/watch?v=Xt_m-pXp-v0",
+    "Kickback haltère": "https://www.youtube.com/watch?v=6SS6K3lAwZ8",
     "Crunch au sol": "https://www.youtube.com/watch?v=Xyd_fa5zoEU",
     "Relevé de jambes": "https://www.youtube.com/watch?v=l4kQd9eWclE",
     "Planche (gainage )": "https://www.youtube.com/watch?v=pSHjTRCQxIw",
     "Russian twist": "https://www.youtube.com/watch?v=wkD8rjkS_Rs",
-    "Roulette à abdos": "https://www.youtube.com/watch?v=rqiQtEW_v_I"
+    "Crunch poulie haute": "https://www.youtube.com/watch?v=2fO6_p8fXyM",
+    "Roulette à abdos": "https://www.youtube.com/watch?v=rqiQtEW_v_I",
+    "Mountain climbers": "https://www.youtube.com/watch?v=nmwgirgXLYM",
+    "V-ups": "https://www.youtube.com/watch?v=7UVp79vW_L0"
 }
 
 # ==========================================
@@ -232,6 +261,15 @@ with tab1:
     with st.expander(L["edit_prof"]):
         new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
         if new_lang != st.session_state.lang:
+            # Sécurité pour la traduction de l'objectif lors du changement de langue
+            old_goals = languages[st.session_state.lang]["goals"]
+            new_goals = languages[new_lang]["goals"]
+            try:
+                idx = old_goals.index(st.session_state.user_profile["objectif"])
+                st.session_state.user_profile["objectif"] = new_goals[idx]
+            except:
+                st.session_state.user_profile["objectif"] = new_goals[0]
+                
             st.session_state.lang = new_lang
             st.rerun()
             
@@ -241,7 +279,14 @@ with tab1:
             a = c_f1.number_input(L["age_field"], value=prof["age"])
             h = c_f2.text_input(L["height_field"], value=prof["grandeur"])
             p = c_f1.number_input(L["weight"], value=prof["poids"])
-            obj = c_f2.selectbox(L["obj_field"], L["goals"], index=L["goals"].index(prof["objectif"]))
+            
+            # Sécurité pour l'index de l'objectif
+            try:
+                obj_idx = L["goals"].index(prof["objectif"])
+            except:
+                obj_idx = 0
+                
+            obj = c_f2.selectbox(L["obj_field"], L["goals"], index=obj_idx)
             b = st.text_area(L["inj_field"], value=prof["blessures"])
             if st.form_submit_button(L["save"]):
                 st.session_state.user_profile.update({"nom": n, "age": a, "grandeur": h, "poids": p, "objectif": obj, "blessures": b})

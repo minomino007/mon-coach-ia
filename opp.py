@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import date, timedelta
+from datetime import date
 import openai
 import json
 import calendar
@@ -15,12 +15,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Correction de l'erreur 401 : On utilise la clé directe
+# Utilisation de la clé directe pour éviter les erreurs de connexion
 api_key_val = "sk-proj-7_R7-BvF7H_OaE5G-iNqXm8G-1N4"
 client = openai.OpenAI(api_key=api_key_val)
 
 # ==========================================
-# 2. SYSTÈME DE TRADUCTION
+# 2. SYSTÈME DE TRADUCTION INTÉGRAL (TOUT EST TRADUIT)
 # ==========================================
 languages = {
     "Français": {
@@ -58,10 +58,11 @@ languages = {
         "history_header": "📅 Historique",
         "history_view": "Consulter une date",
         "note_day": "Note du jour",
-        "no_data": "Rien d'enregistré.",
+        "no_data": "Rien d'enregistré pour ce jour.",
         "zones": ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"],
         "lang_code": "fr-FR",
-        "cal_title": "📅 Calendrier d'Entraînement"
+        "cal_title": "📅 Calendrier d'Entraînement",
+        "detail_title": "🔎 Détail de la séance"
     },
     "English": {
         "tabs": ["📊 Profile", "🏋️ Today's Workout", "👤 Guide", "🎥 Vision", "📅 Calendar"],
@@ -98,15 +99,16 @@ languages = {
         "history_header": "📅 History",
         "history_view": "View a date",
         "note_day": "Daily Note",
-        "no_data": "Nothing recorded.",
+        "no_data": "Nothing recorded for this day.",
         "zones": ["Chest", "Back", "Legs", "Shoulders", "Abs"],
         "lang_code": "en-US",
-        "cal_title": "📅 Training Calendar"
+        "cal_title": "📅 Training Calendar",
+        "detail_title": "🔎 Workout Details"
     }
 }
 
 # ==========================================
-# 3. INITIALISATION MÉMOIRE
+# 3. INITIALISATION MÉMOIRE (SESSION STATE)
 # ==========================================
 if 'lang' not in st.session_state: st.session_state.lang = "Français"
 L = languages[st.session_state.lang]
@@ -120,36 +122,45 @@ if 'user_profile' not in st.session_state:
         "objectif": L["goals"][0], "poids": 205, "blessures": "Aucune"
     }
 
-# Initialisation des variables vocales pour éviter les erreurs
-for key in ['voice_zone', 'serie_zone']:
-    if key not in st.session_state: st.session_state[key] = L["zones"][0]
-for key in ['voice_exercice', 'serie_exercice', 'texte_vocal']:
-    if key not in st.session_state: st.session_state[key] = ""
+# Initialisation des états pour l'analyse vocale
+if 'serie_zone' not in st.session_state: st.session_state.serie_zone = L["zones"][0]
+if 'serie_exercice' not in st.session_state: st.session_state.serie_exercice = ""
 if 'voice_poids' not in st.session_state: st.session_state.voice_poids = 135
 if 'voice_reps' not in st.session_state: st.session_state.voice_reps = 8
+if 'texte_vocal' not in st.session_state: st.session_state.texte_vocal = ""
+
+# Liste d'exercices référence
+chest_options = [
+    "Développé couché", "Développé incliné", "Développé décliné",
+    "Développé haltères", "Écarté couché", "Écarté incliné",
+    "Pec deck (machine)", "Cross-over à la poulie", "Pompes",
+    "Machine chest press"
+]
 
 # ==========================================
 # 4. FONCTION ANALYSE TEXTE VOCAL
 # ==========================================
 def analyser_texte_vocal(texte):
-    prompt = f"""Extraire les infos de musculation : "{texte}". 
-    Répondre UNIQUEMENT en JSON : zone, exercice, poids (int), reps (int).
-    Zones : {L['zones']}.
-    Exemple : {{"zone": "{L['zones'][0]}", "exercice": "Bench press", "poids": 180, "reps": 10}}"""
+    prompt = f"""Extraire les infos de musculation du texte suivant : "{texte}". 
+    Répondre UNIQUEMENT en JSON valide avec ces clés : zone, exercice, poids (nombre entier), reps (nombre entier).
+    Zones possibles : {L['zones']}.
+    Si l'exercice est pour les pectoraux, utilise un nom de cette liste : {chest_options}"""
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}]
     )
-    return json.loads(response.choices[0].message.content.strip())
+    contenu = response.choices[0].message.content
+    return json.loads(contenu.strip().replace("```json", "").replace("```", ""))
 
 # ==========================================
 # 5. INTERFACE UTILISATEUR
 # ==========================================
 st.title("🤖 Mon Gym AI Agent")
+
 tab1, tab2, tab3, tab4, tab5 = st.tabs(L["tabs"])
 
-# --- ONGLET 1 : PROFIL AVEC CALENDRIER VISUEL ---
+# --- ONGLET 1 : PROFIL + CALENDRIER INTERACTIF ---
 with tab1:
     st.header(L["prof_header"])
     prof = st.session_state.user_profile
@@ -158,113 +169,40 @@ with tab1:
     col_m2.metric(L["obj_field"], prof['objectif'])
     col_m3.metric(L["age_field"], f"{prof['age']}")
 
-    # --- NOUVEAU CALENDRIER VISUEL (Comme ton image) ---
+    st.write(f"**{L['name_field']} :** {prof['nom']} | **{L['height_field']} :** {prof['grandeur']}")
+    st.warning(f"🩹 **{L['inj_field']} :** {prof['blessures']}")
+
     st.divider()
     st.subheader(L["cal_title"])
-    
+
+    # Logique du calendrier
     today = date.today()
     cal = calendar.Calendar(firstweekday=6)
     month_days = cal.monthdatescalendar(today.year, today.month)
     
-    # Affichage de la grille du mois
+    # Affichage de la grille
     for week in month_days:
         cols = st.columns(7)
         for i, day in enumerate(week):
             with cols[i]:
-                # On affiche le numéro du jour
-                is_today = "⭐" if day == today else ""
-                st.write(f"**{day.day}** {is_today}")
-                
-                # Vérifier si on a travaillé ce jour-là
+                st.write(f"**{day.day}**")
                 df_logs = pd.DataFrame(st.session_state.logs)
                 if not df_logs.empty:
                     day_str = str(day)
-                    work_this_day = df_logs[df_logs['Date'] == day_str]
-                    if not work_this_day.empty:
-                        # On affiche les zones travaillées en bleu (comme ton image)
-                        zones_faites = work_this_day['Zone'].unique()
-                        for z in zones_faites:
-                            if st.button(z, key=f"btn_{day}_{z}", use_container_width=True):
-                                # Si on clique, on montre le détail en bas
-                                st.session_state.detail_date = day_str
+                    work_day = df_logs[df_logs['Date'] == day_str]
+                    if not work_day.empty:
+                        zones = work_day['Zone'].unique()
+                        for z in zones:
+                            if st.button(z, key=f"cal_{day}_{z}", use_container_width=True):
+                                st.session_state.selected_date_detail = day_str
 
-    # Affichage du détail quand on clique
-    if 'detail_date' in st.session_state:
-        st.info(f"🔎 Détail du {st.session_state.detail_date}")
-        det = pd.DataFrame(st.session_state.logs)
-        st.table(det[det['Date'] == st.session_state.detail_date][["Exercice", "Poids", "Reps"]])
+    # Affichage du détail au clic
+    if 'selected_date_detail' in st.session_state:
+        st.info(f"{L['detail_title']} : {st.session_state.selected_date_detail}")
+        det_df = pd.DataFrame(st.session_state.logs)
+        st.table(det_df[det_df['Date'] == st.session_state.selected_date_detail][["Exercice", "Poids", "Reps"]])
 
     with st.expander(L["edit_prof"]):
-        lang_choice = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
-        if lang_choice != st.session_state.lang:
-            st.session_state.lang = lang_choice
-            st.rerun()
-
-# --- ONGLET 2 : SÉANCE (AVEC FIX ERREUR 401) ---
-with tab2:
-    st.header(L["workout_header"])
-    
-    # Bouton Micro HTML
-    st.components.v1.html(f"""
-        <button id="mic-btn" style="background:#ff4b4b;color:white;border:none;padding:12px;border-radius:8px;width:100%;cursor:pointer;">{L['mic_btn']}</button>
-        <div id="res" style="color:#00ff88;margin-top:10px;">{L['mic_waiting']}</div>
-        <script>
-        const btn = document.getElementById('mic-btn');
-        btn.onclick = () => {{
-            const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            rec.lang = '{L['lang_code']}';
-            rec.onresult = (e) => {{
-                const t = e.results[0][0].transcript;
-                document.getElementById('res').innerText = '{L['mic_success']}' + t;
-                window.parent.postMessage({{type: 'streamlit:setComponentValue', value: t}}, '*');
-            }};
-            rec.start();
-        }};
-        </script>
-    """, height=100)
-
-    st.write(L["manual_input_label"])
-    txt_vocal = st.text_input("...", value=st.session_state.texte_vocal)
-
-    if st.button(L["analyze_btn"], type="primary"):
-        if txt_vocal:
-            data = analyser_texte_vocal(txt_vocal)
-            st.session_state.serie_zone = data.get("zone", L["zones"][0])
-            st.session_state.serie_exercice = data.get("exercice", "")
-            st.session_state.voice_poids = int(data.get("poids", 135))
-            st.session_state.voice_reps = int(data.get("reps", 8))
-            st.rerun()
-
-    st.divider()
-    dt = st.date_input(L["date_label"], date.today())
-    
-    col1, col2 = st.columns(2)
-    with col1: sz = st.selectbox(L["zone_label"], L["zones"], index=L["zones"].index(st.session_state.serie_zone) if st.session_state.serie_zone in L["zones"] else 0)
-    with col2: se = st.text_input(L["ex_label"], value=st.session_state.serie_exercice)
-    
-    with st.form("set_form"):
-        cw, cr = st.columns(2)
-        win = cw.number_input(L["weight"], value=st.session_state.voice_poids)
-        rin = cr.number_input(L["reps"], value=st.session_state.voice_reps)
-        if st.form_submit_button(L["add_set"]):
-            st.session_state.temp_workout.append({"Date": str(dt), "Zone": sz, "Exercice": se, "Poids": win, "Reps": rin})
-            st.rerun()
-
-    if st.session_state.temp_workout:
-        st.subheader(L["summary_header"])
-        st.dataframe(pd.DataFrame(st.session_state.temp_workout))
-        if st.button(L["validate"]):
-            st.session_state.logs.extend(st.session_state.temp_workout)
-            st.session_state.temp_workout = []
-            st.success("Enregistré !")
-            st.balloons()
-
-# --- AUTRES ONGLETS (STANDARDS) ---
-with tab3: st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
-with tab4: st.file_uploader("Upload", type=["mp4", "mov"])
-with tab5:
-    st.header(L["history_header"])
-    d_view = st.date_input(L["history_view"], date.today())
-    df_h = pd.DataFrame(st.session_state.logs)
-    if not df_h.empty:
-        st.table(df_h[df_h['Date'] == str(d_view)])
+        new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
+        if new_lang != st.session_state.lang:
+            st.session_state.lang = new_lang

@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 api_key_val = st.secrets["OPENAI_API_KEY"]
-client = openai.OpenAI(api_key=api_key_val)
+client = openai.OpenAI(api_key=api_key_val, base_url="https://openrouter.ai/api/v1")
 
 # ==========================================
 # 2. SYSTÈME DE TRADUCTION
@@ -117,7 +117,7 @@ def extraire_donnees_seance(audio_bytes):
     Si l'exercice est pour les pectoraux, utilise un nom de cette liste : {chest_options}"""
 
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="openai/gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}]
     )
     return json.loads(response.choices[0].message.content), texte

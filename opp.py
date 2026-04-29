@@ -2,72 +2,76 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 
-# Configuration de la page
+# Configuration
 st.set_page_config(page_title="Gym AI Agent PRO", layout="centered")
 
-# --- INITIALISATION MÉMOIRE ---
+# --- MÉMOIRE ---
 if 'logs' not in st.session_state: st.session_state.logs = []
 if 'selection_muscle' not in st.session_state: st.session_state.selection_muscle = "Pectoraux"
 if 'notes_calendrier' not in st.session_state: st.session_state.notes_calendrier = {}
 
-# --- LA LISTE DES 15 EXERCICES PECTORAUX ---
-chest_list = {
-    "Développé couché": "https://www.youtube.com/watch?v=gRVjAtPip0Y",
-    "Développé incliné": "https://www.youtube.com/watch?v=SrqOu55lrYU",
-    "Développé décliné": "https://www.youtube.com/watch?v=LfyQFl7O-LI",
-    "Développé haltères": "https://www.youtube.com/watch?v=VmB1G1K7v94",
-    "Écarté couché": "https://www.youtube.com/watch?v=eGjt4lk6g34",
-    "Écarté incliné": "https://www.youtube.com/watch?v=8XpPAnR9jB8",
-    "Pec deck (machine)": "https://www.youtube.com/watch?v=O-S6Yit5Miw",
-    "Cross-over à la poulie": "https://www.youtube.com/watch?v=taI4XduLpTk",
-    "Pompes": "https://www.youtube.com/watch?v=pSHjTRCQxIw",
-    "Pompes inclinées": "https://www.youtube.com/watch?v=Z0bRiVHNn8Q",
-    "Pompes déclinées": "https://www.youtube.com/watch?v=SKPab2z8qhY",
-    "Dips (buste penché)": "https://www.youtube.com/watch?v=48SfsR2O3Rg",
-    "Pullover haltère": "https://www.youtube.com/watch?v=FK4rkRh7XP4",
-    "Pullover à la poulie": "https://www.youtube.com/watch?v=vV7InVn7C0c",
-    "Machine chest press": "https://www.youtube.com/watch?v=xZ9onwG36Yw"
-}
-
 st.title("🤖 Mon Gym AI Agent")
 
-# --- LES ONGLETS ---
+# --- ONGLETS ---
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Profil", "🏋️ Séance", "👤 Guide", "🎥 Vision", "📅 Calendrier"])
 
-# --- ONGLET 3 : LE GUIDE (C'est là que l'erreur était) ---
-with tab3:
-    st.header("Guide des Pectoraux")
-    selection = st.selectbox("Choisis ton exercice :", list(chest_list.keys()))
-    
-    st.info(f"**Exercice :** {selection}")
-    st.video(chest_list[selection])
-
-# --- RESTE DE L'APP (Sécurisé) ---
+# --- ONGLET 1 : PROFIL ---
 with tab1:
-    st.header("Statistiques")
-    st.metric("Poids actuel", "205 lbs")
+    st.header("Tes Statistiques")
+    col1, col2 = st.columns(2)
+    col1.metric("Poids", "205 lbs")
+    col2.metric("Objectif", "Prise de Masse")
     if st.session_state.logs:
         df = pd.DataFrame(st.session_state.logs)
         st.line_chart(df.set_index("Date")["Poids"])
 
+# --- ONGLET 2 : SÉANCE ---
 with tab2:
-    st.header("Nouvelle Série")
-    with st.form("workout"):
-        ex = st.selectbox("Muscle", ["Pectoraux", "Dos", "Jambes"])
-        p = st.number_input("Poids (lbs)", 135)
+    st.header("Noter ta séance")
+    with st.form("workout_form"):
+        exer = st.selectbox("Muscle", ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"])
+        poids = st.number_input("Poids (lbs)", value=135)
+        reps = st.number_input("Reps", value=8)
         if st.form_submit_button("Enregistrer"):
-            st.session_state.logs.append({"Date": str(date.today()), "Poids": p})
-            st.success("Sauvegardé !")
+            st.session_state.logs.append({"Date": str(date.today()), "Poids": poids})
+            st.balloons()
+            st.success("Enregistré !")
 
+# --- ONGLET 3 : GUIDE (Retour aux boutons) ---
+with tab3:
+    st.header("Guide Muscles")
+    st.write("Clique sur un muscle :")
+    
+    c1, c2, c3 = st.columns(3)
+    if c1.button("Pectoraux"): st.session_state.selection_muscle = "Pectoraux"
+    if c2.button("Dos"): st.session_state.selection_muscle = "Dos"
+    if c3.button("Jambes"): st.session_state.selection_muscle = "Jambes"
+    
+    muscle = st.session_state.selection_muscle
+    st.divider()
+    
+    if muscle == "Pectoraux":
+        st.subheader("🔥 Top Exercices Pectoraux")
+        st.write("- Développé couché\n- Développé incliné\n- Dips\n- Pompes\n- Écartés haltères")
+        st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
+    else:
+        st.info(f"Section {muscle} sélectionnée. Prêt pour l'entraînement !")
+
+# --- ONGLET 4 : VISION ---
 with tab4:
     st.header("Vision IA")
-    v = st.file_uploader("Vidéo", type=["mp4", "mov"])
+    v = st.file_uploader("Upload ta vidéo", type=["mp4", "mov"])
     if v: st.video(v)
 
+# --- ONGLET 5 : CALENDRIER ---
 with tab5:
-    st.header("Calendrier")
-    d = st.date_input("Date", date.today())
-    memo = st.text_area("Note", value=st.session_state.notes_calendrier.get(str(d), ""))
-    if st.button("Enregistrer Note"):
-        st.session_state.notes_calendrier[str(d)] = memo
-        st.success("Note ok !")
+    st.header("📅 Calendrier")
+    d_choisie = st.date_input("Sélectionne une date :", date.today())
+    d_str = str(d_choisie)
+    
+    note_existante = st.session_state.notes_calendrier.get(d_str, "")
+    nouvelle_note = st.text_area("Note du jour :", value=note_existante)
+    
+    if st.button("Sauvegarder"):
+        st.session_state.notes_calendrier[d_str] = nouvelle_note
+        st.success("Note enregistrée !")

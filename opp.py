@@ -105,7 +105,7 @@ chest_options = [
 zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"]
 
 # ==========================================
-# 4. FONCTION ANALYSE IA
+# 4. FONCTION ANALYSE IA (AMÉLIORÉE)
 # ==========================================
 def analyser_texte_vocal(texte):
     prompt = f"""Tu es un assistant expert en musculation. Analyse la demande de l'utilisateur : "{texte}".
@@ -203,6 +203,7 @@ with tab2:
     st.header(L["workout_header"])
     st.write(L["voice_instruction"])
 
+    # COMPOSANT VOCAL AVEC ANALYSE AUTOMATIQUE
     voice_data = st.components.v1.html("""
         <style>
             #mic-btn { background-color: #ff4b4b; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.3s; }
@@ -241,6 +242,7 @@ with tab2:
         </script>
     """, height=130)
 
+    # Logique de traitement automatique si une nouvelle voix est détectée
     if voice_data and voice_data != st.session_state.get('last_voice_input', ''):
         st.session_state.last_voice_input = voice_data
         try:
@@ -256,7 +258,7 @@ with tab2:
             st.error(f"Erreur d'analyse vocale : {e}")
 
     st.write("**💬 Ou écris ta séance ici :**")
-    texte_input = st.text_input("Ex: J'ai fait du bench press à 200 lbs pour 12 reps", value="", key="texte_manual_input", placeholder="Parle-moi de ta série...")
+    texte_input = st.text_input("Ex: J'ai fait du bench press à 200 lbs pour 12 reps", value="", key="texte_manual_input", placeholder="Parle-moi de ta séance...")
 
     if st.button("🤖 Analyser le texte", type="secondary", use_container_width=True):
         if texte_input:
@@ -323,14 +325,25 @@ with tab2:
             st.session_state.temp_workout = []
             st.rerun()
 
-# --- AUTRES ONGLETS ---
-with tab3: st.header("👤 Guide Technique"); st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y" )
-with tab4: st.header("🎥 Vision IA"); up = st.file_uploader("Upload", type=["mp4", "mov"]); st.video(up) if up else None
+# --- ONGLET 3 : GUIDE TECHNIQUE ---
+with tab3: 
+    st.header("👤 Guide Technique")
+    st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y" )
+
+# --- ONGLET 4 : VISION IA ---
+with tab4: 
+    st.header("🎥 Vision IA")
+    up = st.file_uploader("Upload", type=["mp4", "mov"])
+    if up:
+        st.video(up)
+
+# --- ONGLET 5 : CALENDRIER / HISTORIQUE ---
 with tab5:
     st.header("📅 Historique")
     d_cal = st.date_input("Consulter", date.today())
     df_g = pd.DataFrame(st.session_state.logs)
     if not df_g.empty:
         seance = df_g[df_g['Date'] == str(d_cal)]
-        if not seance.empty: st.table(seance)
+        if not seance.empty: 
+            st.table(seance)
     st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""), key="note_hist")

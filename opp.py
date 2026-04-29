@@ -15,15 +15,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Utilisation de la clé fournie par l'utilisateur
-# Note : Toujours s'assurer que la clé est complète et active sur platform.openai.com
 api_key_val = "sk-proj-7_R7-BvF7H_OaE5G-iNqXm8G-1N4"
-
-# Initialisation du client avec la clé en dur pour garantir la connexion
 client = openai.OpenAI(api_key=api_key_val)
 
 # ==========================================
-# 2. SYSTÈME DE TRADUCTION COMPLET (AUCUN RÉSUMÉ)
+# 2. SYSTÈME DE TRADUCTION
 # ==========================================
 languages = {
     "Français": {
@@ -75,10 +71,10 @@ languages = {
 }
 
 # ==========================================
-# 3. INITIALISATION MÉMOIRE (SESSION STATE)
+# 3. INITIALISATION MÉMOIRE
 # ==========================================
 if 'lang' not in st.session_state: st.session_state.lang = "Français"
-if 'logs' not in st.session_state: st.session_state.logs = [] 
+if 'logs' not in st.session_state: st.session_state.logs = []
 if 'notes_calendrier' not in st.session_state: st.session_state.notes_calendrier = {}
 if 'temp_workout' not in st.session_state: st.session_state.temp_workout = []
 if 'user_profile' not in st.session_state:
@@ -87,21 +83,30 @@ if 'user_profile' not in st.session_state:
         "objectif": "Prise de masse", "poids": 205, "blessures": "Aucune", "niveau": "Intermédiaire"
     }
 
+# ✅ NOUVEAU : mémoire pour les champs pré-remplis par la voix
+if 'voice_zone' not in st.session_state: st.session_state.voice_zone = "Pectoraux"
+if 'voice_exercice' not in st.session_state: st.session_state.voice_exercice = ""
+if 'voice_poids' not in st.session_state: st.session_state.voice_poids = 135
+if 'voice_reps' not in st.session_state: st.session_state.voice_reps = 8
+if 'voice_ready' not in st.session_state: st.session_state.voice_ready = False
+
 chest_options = [
-    "Développé couché", "Développé incliné", "Développé décliné", 
-    "Développé haltères", "Écarté couché", "Écarté incliné", 
-    "Pec deck (machine)", "Cross-over à la poulie", "Pompes", 
-    "Pompes inclinées", "Pompes déclinées", "Dips (buste penché)", 
+    "Développé couché", "Développé incliné", "Développé décliné",
+    "Développé haltères", "Écarté couché", "Écarté incliné",
+    "Pec deck (machine)", "Cross-over à la poulie", "Pompes",
+    "Pompes inclinées", "Pompes déclinées", "Dips (buste penché)",
     "Pullover haltère", "Pullover à la poulie", "Machine chest press"
 ]
 
+zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"]
+
 # ==========================================
-# 4. FONCTION INTELLIGENTE (VOCAL -> DONNÉES)
+# 4. FONCTION ANALYSE VOCALE
 # ==========================================
 def extraire_donnees_seance(audio_bytes):
     with open("temp_audio.wav", "wb") as f:
         f.write(audio_bytes)
-    
+
     with open("temp_audio.wav", "rb") as audio_file:
         transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
         texte = transcript.text
@@ -110,7 +115,7 @@ def extraire_donnees_seance(audio_bytes):
     Répondre UNIQUEMENT en JSON avec ces clés : zone, exercice, poids (nombre), reps (nombre).
     Zones possibles : Pectoraux, Dos, Jambes, Épaules, Abdos.
     Si l'exercice est pour les pectoraux, utilise un nom de cette liste : {chest_options}"""
-    
+
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}]
@@ -120,13 +125,13 @@ def extraire_donnees_seance(audio_bytes):
 L = languages[st.session_state.lang]
 
 # ==========================================
-# 5. INTERFACE UTILISATEUR (ONGLETS)
+# 5. INTERFACE UTILISATEUR
 # ==========================================
 st.title("🤖 Mon Gym AI Agent")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(L["tabs"])
 
-# --- ONGLET 1 : PROFIL COMPLET ---
+# --- ONGLET 1 : PROFIL ---
 with tab1:
     st.header(L["prof_header"])
     new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
@@ -156,39 +161,74 @@ with tab1:
                 st.session_state.user_profile.update({"nom": n, "age": a, "grandeur": h, "poids": p, "objectif": obj, "blessures": b})
                 st.rerun()
 
-# --- ONGLET 2 : SÉANCE DU JOUR (AVEC VOCAL INTELLIGENT) ---
+# --- ONGLET 2 : SÉANCE DU JOUR ---
 with tab2:
     st.header(L["workout_header"])
     st.write(L["voice_instruction"])
-    audio_record = mic_recorder(start_prompt="🔴 Commencer l'enregistrement", stop_prompt="🟢 Analyser ma séance", key="gym_mic_final_v4")
 
+    # 🎙️ Microphone
+    audio_record = mic_recorder(
+        start_prompt="🔴 Commencer l'enregistrement",
+        stop_prompt="🟢 Analyser ma séance",
+        key="gym_mic_final_v4"
+    )
+
+    # ✅ NOUVEAU : après analyse vocale, on remplit les champs automatiquement
     if audio_record:
         try:
             with st.spinner("L'IA analyse votre voix..."):
                 data, texte_brut = extraire_donnees_seance(audio_record['bytes'])
-                st.session_state.temp_workout.append({
-                    "Date": str(date.today()), 
-                    "Zone": data.get("zone", "Pectoraux"), 
-                    "Exercice": data.get("exercice", "Inconnu"), 
-                    "Poids": data.get("poids", 0), 
-                    "Reps": data.get("reps", 0)
-                })
-                st.success(f"Entendu : {texte_brut}")
+
+                # On sauvegarde les valeurs détectées dans la mémoire
+                zone_detectee = data.get("zone", "Pectoraux")
+                if zone_detectee in zones_disponibles:
+                    st.session_state.voice_zone = zone_detectee
+                st.session_state.voice_exercice = data.get("exercice", "")
+                st.session_state.voice_poids = int(data.get("poids", 135))
+                st.session_state.voice_reps = int(data.get("reps", 8))
+                st.session_state.voice_ready = True
+
+                st.success(f"✅ Entendu : *{texte_brut}*")
+                st.info(f"🎯 Détecté → Zone : **{st.session_state.voice_zone}** | Exercice : **{st.session_state.voice_exercice}** | Poids : **{st.session_state.voice_poids} lbs** | Reps : **{st.session_state.voice_reps}**")
+
         except Exception as e:
-            st.error(f"Erreur d'analyse : {e}. Vérifie que ta clé est bien active sur OpenAI.")
+            st.error(f"Erreur d'analyse : {e}")
 
     st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
-    
-    with st.form("add_set_form_final", clear_on_submit=True):
-        zone = st.selectbox(L["zone_label"], ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"])
-        ex = st.selectbox(L["ex_label"], chest_options) if zone == "Pectoraux" else st.text_input(L["ex_label"])
-        col_w, col_r = st.columns(2)
-        w_input = col_w.number_input(L["weight"], value=135)
-        r_input = col_r.number_input(L["reps"], value=8)
-        if st.form_submit_button(L["add_set"]):
-            st.session_state.temp_workout.append({"Date": str(date_seance), "Zone": zone, "Exercice": ex, "Poids": w_input, "Reps": r_input})
 
+    # ✅ NOUVEAU : le formulaire utilise les valeurs vocales si disponibles
+    with st.form("add_set_form_final", clear_on_submit=True):
+
+        # Zone : pré-sélectionnée par la voix
+        zone_index = zones_disponibles.index(st.session_state.voice_zone) if st.session_state.voice_zone in zones_disponibles else 0
+        zone = st.selectbox(L["zone_label"], zones_disponibles, index=zone_index)
+
+        # Exercice : pré-rempli par la voix
+        if zone == "Pectoraux":
+            ex_index = chest_options.index(st.session_state.voice_exercice) if st.session_state.voice_exercice in chest_options else 0
+            ex = st.selectbox(L["ex_label"], chest_options, index=ex_index)
+        else:
+            ex = st.text_input(L["ex_label"], value=st.session_state.voice_exercice)
+
+        # Poids et Reps : pré-remplis par la voix
+        col_w, col_r = st.columns(2)
+        w_input = col_w.number_input(L["weight"], value=st.session_state.voice_poids)
+        r_input = col_r.number_input(L["reps"], value=st.session_state.voice_reps)
+
+        if st.form_submit_button(L["add_set"]):
+            st.session_state.temp_workout.append({
+                "Date": str(date_seance),
+                "Zone": zone,
+                "Exercice": ex,
+                "Poids": w_input,
+                "Reps": r_input
+            })
+            # On remet à zéro les valeurs vocales après ajout
+            st.session_state.voice_ready = False
+            st.rerun()
+
+    # Liste des séries en attente
     if st.session_state.temp_workout:
         st.subheader("Séries temporaires")
         st.dataframe(pd.DataFrame(st.session_state.temp_workout), use_container_width=True)
@@ -222,7 +262,7 @@ with tab5:
         seance_du_jour = df_global[df_global['Date'] == str(d_cal)]
         if not seance_du_jour.empty:
             st.table(seance_du_jour[["Zone", "Exercice", "Poids", "Reps"]])
-    
+
     st.divider()
     n_cal = st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""))
     if st.button(L["save"], key="save_note_calendar"):

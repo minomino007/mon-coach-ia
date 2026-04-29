@@ -15,8 +15,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Utilisation de ta clé API OpenAI
-api_key_val = "sk-proj-7_R7-BvF7H_OaE5G-iNqXm8G-1N4"
+# Récupération sécurisée de la clé via les Secrets ou la variable directe
+if "OPENAI_API_KEY" in st.secrets:
+    api_key_val = st.secrets["OPENAI_API_KEY"]
+else:
+    # Clé de secours (celle que tu m'as fournie)
+    api_key_val = "sk-proj-7_R7-BvF7H_OaE5G-iNqXm8G-1N4"
+
 client = openai.OpenAI(api_key=api_key_val)
 
 # ==========================================
@@ -141,7 +146,7 @@ with tab1:
     st.warning(f"🩹 **{L['inj_field']} :** {prof['blessures']}")
 
     with st.expander(L["edit_prof"]):
-        with st.form("edit_profile_form"):
+        with st.form("edit_profile_form_complete"):
             n = st.text_input(L["name_field"], value=prof["nom"])
             c_f1, c_f2 = st.columns(2)
             a = c_f1.number_input(L["age_field"], value=prof["age"])
@@ -156,17 +161,12 @@ with tab1:
 # --- ONGLET 2 : SÉANCE DU JOUR (AVEC VOCAL INTELLIGENT) ---
 with tab2:
     st.header(L["workout_header"])
-    
     st.write(L["voice_instruction"])
-    audio_record = mic_recorder(
-        start_prompt="🔴 Commencer l'enregistrement",
-        stop_prompt="🟢 Analyser ma séance",
-        key="gym_mic_ultimate_fixed"
-    )
+    audio_record = mic_recorder(start_prompt="🔴 Commencer l'enregistrement", stop_prompt="🟢 Analyser ma séance", key="gym_mic_fixed_v3")
 
     if audio_record:
         try:
-            with st.spinner("L'IA traite votre demande..."):
+            with st.spinner("L'IA analyse votre voix..."):
                 data, texte_brut = extraire_donnees_seance(audio_record['bytes'])
                 st.session_state.temp_workout.append({
                     "Date": str(date.today()), 
@@ -177,7 +177,7 @@ with tab2:
                 })
                 st.success(f"Entendu : {texte_brut}")
         except Exception as e:
-            st.error(f"Erreur : {e}")
+            st.error(f"Erreur d'analyse : {e}")
 
     st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
@@ -188,7 +188,6 @@ with tab2:
         col_w, col_r = st.columns(2)
         w_input = col_w.number_input(L["weight"], value=135)
         r_input = col_r.number_input(L["reps"], value=8)
-        
         if st.form_submit_button(L["add_set"]):
             st.session_state.temp_workout.append({"Date": str(date_seance), "Zone": zone, "Exercice": ex, "Poids": w_input, "Reps": r_input})
 
@@ -207,9 +206,8 @@ with tab2:
 
 # --- ONGLET 3 : GUIDE ---
 with tab3:
-    st.header("👤 Guide")
-    if st.button("Démonstration Pectoraux"):
-        st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
+    st.header("👤 Guide Technique")
+    st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
 
 # --- ONGLET 4 : VISION ---
 with tab4:
@@ -217,4 +215,18 @@ with tab4:
     up = st.file_uploader("Upload vidéo", type=["mp4", "mov"])
     if up: st.video(up)
 
-# --- ONGLET 5 : CALEND
+# --- ONGLET 5 : CALENDRIER ---
+with tab5:
+    st.header("📅 Historique")
+    d_cal = st.date_input("Consulter une date", date.today(), key="calendar_date_view")
+    df_global = pd.DataFrame(st.session_state.logs)
+    if not df_global.empty:
+        seance_du_jour = df_global[df_global['Date'] == str(d_cal)]
+        if not seance_du_jour.empty:
+            st.table(seance_du_jour[["Zone", "Exercice", "Poids", "Reps"]])
+    
+    st.divider()
+    n_cal = st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""))
+    if st.button(L["save"], key="save_note_calendar"):
+        st.session_state.notes_calendrier[str(d_cal)] = n_cal
+        st.success("Note enregistrée !")

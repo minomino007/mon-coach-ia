@@ -293,10 +293,27 @@ with tab2:
 
     st.divider()
 
-    # ✅ TABLEAU COMPLET + BOUTONS SAUVEGARDER / EFFACER
+    # ✅ RÉSUMÉ COMPLET DE LA SÉANCE — toujours visible, groupé par exercice
     if st.session_state.temp_workout:
-        st.subheader("📊 Toutes tes séries")
-        st.dataframe(pd.DataFrame(st.session_state.temp_workout), use_container_width=True)
+        st.subheader("📊 Ta séance complète")
+
+        # Grouper les séries par exercice
+        exercices_faits = {}
+        for s in st.session_state.temp_workout:
+            nom_ex = s["Exercice"]
+            if nom_ex not in exercices_faits:
+                exercices_faits[nom_ex] = []
+            exercices_faits[nom_ex].append(s)
+
+        # Afficher chaque exercice avec ses séries
+        for nom_ex, series in exercices_faits.items():
+            zone_ex = series[0]["Zone"]
+            st.markdown(f"**💪 {nom_ex}** — *{zone_ex}*")
+            for i, s in enumerate(series):
+                st.write(f"　　Série {i+1} : {s['Poids']} lbs × {s['Reps']} reps")
+            st.write("")
+
+        st.divider()
         cb1, cb2 = st.columns(2)
         if cb1.button(L["validate"], type="primary"):
             st.session_state.logs.extend(st.session_state.temp_workout)

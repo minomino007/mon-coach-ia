@@ -310,11 +310,21 @@ with tab2:
                 st.session_state.last_voice_ts = v_ts
                 with st.spinner("L'IA analyse ta voix..."):
                     data = analyser_texte_vocal(v_text)
+                    # Mettre à jour les états pour l'affichage
                     st.session_state.serie_zone = data.get("zone", "Pectoraux")
                     st.session_state.serie_exercice = data.get("exercice", "")
                     st.session_state.voice_poids = int(data.get("poids", 135))
                     st.session_state.voice_reps = int(data.get("reps", 8))
-                    st.session_state.ai_message = data.get("message", "J'ai bien compris ta séance !")
+                    st.session_state.ai_message = data.get("message", "Série ajoutée automatiquement !")
+                    
+                    # AJOUT AUTOMATIQUE DE LA SÉRIE
+                    st.session_state.temp_workout.append({
+                        "Date": str(date_seance), 
+                        "Zone": st.session_state.serie_zone,
+                        "Exercice": st.session_state.serie_exercice, 
+                        "Poids": st.session_state.voice_poids, 
+                        "Reps": st.session_state.voice_reps
+                    })
                     st.rerun()
         except:
             pass

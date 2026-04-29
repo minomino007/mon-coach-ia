@@ -1,17 +1,18 @@
 import streamlit as st
 import pandas as pd
 from datetime import date
-import openai  # Pour la future transcription
-from streamlit_mic_recorder import mic_recorder  # Pour le micro
+import openai
+from streamlit_mic_recorder import mic_recorder
+import json
 
 # 1. CONFIGURATION & SECRETS
 st.set_page_config(page_title="Gym AI Agent PRO", layout="centered", page_icon="🏋️")
 
-# Connexion à la clé API pour le vocal
 if "OPENAI_API_KEY" in st.secrets:
     openai.api_key = st.secrets["OPENAI_API_KEY"]
+    client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# 2. DICTIONNAIRE DE TRADUCTION COMPLET
+# 2. DICTIONNAIRE
 languages = {
     "Français": {
         "tabs": ["📊 Profil", "🏋️ Séance du jour", "👤 Guide", "🎥 Vision", "📅 Calendrier"],
@@ -22,170 +23,111 @@ languages = {
         "add_set": "➕ Ajouter la série",
         "validate": "✅ Enregistrer l'entraînement complet",
         "clear": "❌ Tout effacer",
-        "lang_label": "Choisir la langue",
+        "lang_label": "Langue",
         "weight": "Poids (lbs)",
         "reps": "Répétitions",
         "date_label": "Date",
         "zone_label": "Zone musculaire",
-        "ex_label": "Exercice spécifique",
+        "ex_label": "Exercice",
         "name_field": "Nom",
         "obj_field": "Objectif",
         "inj_field": "Blessures / Notes",
         "age_field": "Âge",
         "height_field": "Grandeur",
         "goals": ["Prise de masse", "Perte de gras", "Force", "Endurance"]
-    },
-    "English": {
-        "tabs": ["📊 Profile", "🏋️ Today's Workout", "👤 Guide", "🎥 Vision", "📅 Calendar"],
-        "prof_header": "👤 Your Fitness Profile",
-        "edit_prof": "Edit Profile",
-        "save": "Save",
-        "workout_header": "🏋️ Log a Workout",
-        "add_set": "➕ Add Set",
-        "validate": "✅ Save Full Workout",
-        "clear": "❌ Clear All",
-        "lang_label": "Choose Language",
-        "weight": "Weight (lbs)",
-        "reps": "Reps",
-        "date_label": "Date",
-        "zone_label": "Muscle Zone",
-        "ex_label": "Specific Exercise",
-        "name_field": "Name",
-        "obj_field": "Goal",
-        "inj_field": "Injuries / Notes",
-        "age_field": "Age",
-        "height_field": "Height",
-        "goals": ["Muscle Gain", "Fat Loss", "Strength", "Endurance"]
     }
 }
 
-# 3. INITIALISATION MÉMOIRE
+# 3. INITIALISATION
 if 'lang' not in st.session_state: st.session_state.lang = "Français"
 if 'logs' not in st.session_state: st.session_state.logs = [] 
-if 'notes_calendrier' not in st.session_state: st.session_state.notes_calendrier = {}
 if 'temp_workout' not in st.session_state: st.session_state.temp_workout = []
 if 'user_profile' not in st.session_state:
-    st.session_state.user_profile = {
-        "nom": "Athlète", "age": 25, "grandeur": "5'10",
-        "objectif": "Prise de masse", "poids": 205, "blessures": "Aucune", "niveau": "Intermédiaire"
-    }
+    st.session_state.user_profile = {"nom": "Athlète", "age": 25, "grandeur": "5'10", "objectif": "Prise de masse", "poids": 205, "blessures": "Aucune"}
 
-# 4. LISTE DES 15 EXERCICES PECTORAUX
-chest_options = [
-    "Développé couché", "Développé incliné", "Développé décliné", 
-    "Développé haltères", "Écarté couché", "Écarté incliné", 
-    "Pec deck (machine)", "Cross-over à la poulie", "Pompes", 
-    "Pompes inclinées", "Pompes déclinées", "Dips (buste penché)", 
-    "Pullover haltère", "Pullover à la poulie", "Machine chest press"
-]
-
+chest_options = ["Développé couché", "Développé incliné", "Pec deck", "Pompes", "Dips"]
 L = languages[st.session_state.lang]
-st.title("🤖 Mon Gym AI Agent")
 
-# 5. ONGLETS
+# --- FONCTION D'EXTRACTION IA ---
+def extraire_donnees_seance(audio_bytes):
+    # 1. Transcription
+    with open("temp_audio.wav", "wb") as f:
+        f.write(audio_bytes)
+    
+    with open("temp_audio.wav", "rb") as audio_file:
+        transcript = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
+        texte = transcript.text
+
+    # 2. Analyse par GPT pour formater en JSON
+    prompt = f"""Extraire les infos de musculation du texte suivant : "{texte}". 
+    Répondre UNIQUEMENT en JSON avec ces clés : zone, exercice, poids (nombre), reps (nombre).
+    Zones possibles : Pectoraux, Dos, Jambes, Épaules, Abdos."""
+    
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return json.loads(response.choices[0].message.content), texte
+
+# --- INTERFACE ---
+st.title("🤖 Mon Gym AI Agent")
 tab1, tab2, tab3, tab4, tab5 = st.tabs(L["tabs"])
 
-# --- ONGLET 1 : PROFIL (RÉTABLI) ---
+# --- ONGLET 1 : PROFIL ---
 with tab1:
     st.header(L["prof_header"])
-    new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
-    if new_lang != st.session_state.lang:
-        st.session_state.lang = new_lang
-        st.rerun()
-
     prof = st.session_state.user_profile
-    col_m1, col_m2, col_m3 = st.columns(3)
-    col_m1.metric(L["weight"], f"{prof['poids']} lbs")
-    col_m2.metric(L["obj_field"], prof['objectif'])
-    col_m3.metric(L["age_field"], f"{prof['age']}")
-
-    # Affichage des infos détaillées
-    st.write(f"**{L['name_field']} :** {prof['nom']} | **{L['height_field']} :** {prof['grandeur']}")
-    st.warning(f"🩹 **{L['inj_field']} :** {prof['blessures']}")
-
-    # Formulaire de modification
+    st.write(f"**Nom :** {prof['nom']} | **Objectif :** {prof['objectif']}")
     with st.expander(L["edit_prof"]):
-        with st.form("edit_profile_form"):
+        with st.form("edit_profile"):
             n = st.text_input(L["name_field"], value=prof["nom"])
-            c_f1, c_f2 = st.columns(2)
-            a = c_f1.number_input(L["age_field"], value=prof["age"])
-            h = c_f2.text_input(L["height_field"], value=prof["grandeur"])
-            p = c_f1.number_input(L["weight"], value=prof["poids"])
-            obj = c_f2.selectbox(L["obj_field"], L["goals"])
-            b = st.text_area(L["inj_field"], value=prof["blessures"])
+            p = st.number_input(L["weight"], value=prof["poids"])
             if st.form_submit_button(L["save"]):
-                st.session_state.user_profile.update({
-                    "nom": n, "age": a, "grandeur": h, 
-                    "poids": p, "objectif": obj, "blessures": b
-                })
+                st.session_state.user_profile.update({"nom": n, "poids": p})
                 st.rerun()
 
-# --- ONGLET 2 : SÉANCE DU JOUR (AVEC VOCAL) ---
+# --- ONGLET 2 : SÉANCE DU JOUR ---
 with tab2:
     st.header(L["workout_header"])
     
-    # Micro
-    st.write("🎙️ **Commande Vocale**")
-    audio_record = mic_recorder(
-        start_prompt="🔴 Commencer l'enregistrement",
-        stop_prompt="🟢 Terminer (Analyse en cours...)",
-        key="gym_mic"
-    )
+    # MICRO INTELLIGENT
+    st.write("🎙️ **Dit par exemple :** 'Pectoraux, développé couché, 150 livres, 12 répétitions'")
+    audio_record = mic_recorder(start_prompt="🔴 Parler", stop_prompt="🟢 Analyser", key="gym_mic_pro")
 
     if audio_record:
-        st.audio(audio_record['bytes'])
-        st.info("Audio capturé !")
+        try:
+            with st.spinner("L'IA analyse ta voix..."):
+                data, texte_brut = extraire_donnees_seance(audio_record['bytes'])
+                
+                # Ajout automatique à la liste temporaire
+                st.session_state.temp_workout.append({
+                    "Date": str(date.today()), 
+                    "Zone": data.get("zone", "Inconnue"), 
+                    "Exercice": data.get("exercice", "Inconnu"), 
+                    "Poids": data.get("poids", 0), 
+                    "Reps": data.get("reps", 0)
+                })
+                st.success(f"Compris : {texte_brut}")
+        except Exception as e:
+            st.error(f"Erreur d'analyse : {e}")
 
     st.divider()
-    date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
     
-    with st.form("add_set_form_final", clear_on_submit=True):
-        zone = st.selectbox(L["zone_label"], ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"])
-        ex = st.selectbox(L["ex_label"], chest_options) if zone == "Pectoraux" else st.text_input(L["ex_label"])
-        col_w, col_r = st.columns(2)
-        w_input = col_w.number_input(L["weight"], value=135)
-        r_input = col_r.number_input(L["reps"], value=8)
-        
+    # Formulaire manuel (toujours dispo)
+    with st.form("manual_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        z = col1.selectbox(L["zone_label"], ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"])
+        ex = col2.text_input(L["ex_label"])
+        w = col1.number_input(L["weight"], value=135)
+        r = col2.number_input(L["reps"], value=8)
         if st.form_submit_button(L["add_set"]):
-            st.session_state.temp_workout.append({
-                "Date": str(date_seance), "Zone": zone, "Exercice": ex, "Poids": w_input, "Reps": r_input
-            })
+            st.session_state.temp_workout.append({"Date": str(date.today()), "Zone": z, "Exercice": ex, "Poids": w, "Reps": r})
 
+    # Affichage de la liste
     if st.session_state.temp_workout:
-        st.subheader("Séries temporaires")
         st.dataframe(pd.DataFrame(st.session_state.temp_workout), use_container_width=True)
-        cb1, cb2 = st.columns(2)
-        if cb1.button(L["validate"], type="primary"):
+        if st.button(L["validate"], type="primary"):
             st.session_state.logs.extend(st.session_state.temp_workout)
             st.session_state.temp_workout = []
-            st.success("Entraînement enregistré !")
+            st.success("Séance enregistrée !")
             st.balloons()
-        if cb2.button(L["clear"]):
-            st.session_state.temp_workout = []
-            st.rerun()
-
-# --- ONGLET 3 : GUIDE / 4 : VISION / 5 : CALENDRIER ---
-with tab3:
-    st.header("👤 Guide")
-    if st.button("Démonstration Pectoraux"):
-        st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
-
-with tab4:
-    st.header("🎥 Vision IA")
-    up = st.file_uploader("Upload", type=["mp4", "mov"])
-    if up: st.video(up)
-
-with tab5:
-    st.header("📅 Historique")
-    d_cal = st.date_input("Choisir une date", date.today(), key="date_input_calendar")
-    df_global = pd.DataFrame(st.session_state.logs)
-    if not df_global.empty:
-        seance_du_jour = df_global[df_global['Date'] == str(d_cal)]
-        if not seance_du_jour.empty:
-            st.table(seance_du_jour[["Zone", "Exercice", "Poids", "Reps"]])
-
-    st.divider()
-    n_cal = st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""))
-    if st.button(L["save"], key="save_note_cal"):
-        st.session_state.notes_calendrier[str(d_cal)] = n_cal
-        st.success("Note enregistrée !")

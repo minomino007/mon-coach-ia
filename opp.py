@@ -2,64 +2,108 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 
-# Configuration
+# Configuration de l'application
 st.set_page_config(page_title="Gym AI Agent PRO", layout="centered")
 
-st.title("🤖 Mon Gym AI Agent")
-
-# --- MÉMOIRE DE L'APP ---
+# --- INITIALISATION DE LA MÉMOIRE (Pour ne rien perdre en changeant d'onglet) ---
+if 'logs' not in st.session_state:
+    st.session_state.logs = []
+if 'selection_muscle' not in st.session_state:
+    st.session_state.selection_muscle = None
 if 'notes_calendrier' not in st.session_state:
     st.session_state.notes_calendrier = {}
 
-# --- SYSTÈME D'ONGLETS ---
+# --- BASE DE DONNÉES EXERCICES ---
+exercices_info = {
+    "Pectoraux": {"ex": "Développé Couché", "desc": "Cible le torse. Garde les omoplates serrées. Objectif : 225 lbs !"},
+    "Dos": {"ex": "Tirage Buste Penché", "desc": "Cible l'épaisseur. Garde le dos droit comme un piquet."},
+    "Jambes": {"ex": "Squat", "desc": "Cible les cuisses. ATTENTION : Pour ton genou, contrôle la descente sur 3 secondes."},
+    "Épaules": {"ex": "Développé Militaire", "desc": "Cible les deltoïdes. Serre les abdos pour protéger ton dos."},
+    "Abdos": {"ex": "Sit-ups", "desc": "Ton favori. Croise les mains sur les épaules, ne tire pas la nuque."}
+}
+
+st.title("🤖 Mon Gym AI Agent")
+
+# --- CRÉATION DES ONGLETS (TABS) ---
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Profil", "🏋️ Séance", "👤 Guide", "🎥 Vision", "📅 Calendrier"])
 
-# On saute directement à l'onglet Calendrier pour la mise à jour
+# --- ONGLET 1 : DASHBOARD & PROFIL ---
+with tab1:
+    st.header("Tes Statistiques")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Poids", "205 lbs")
+    col2.metric("Bench PR", "205 lbs")
+    col3.metric("Squat PR", "225 lbs")
+    
+    if st.session_state.logs:
+        st.subheader("Progression de ta force")
+        df = pd.DataFrame(st.session_state.logs)
+        st.line_chart(df.set_index("Date")["1RM Est."])
+    else:
+        st.info("Fais ta première séance pour voir tes graphiques ici !")
+
+# --- ONGLET 2 : LOG DE SÉANCE ---
+with tab2:
+    st.header("Noter tes séries")
+    with st.form("workout_form"):
+        exer = st.selectbox("Exercice", list(exercices_info.keys()))
+        poids = st.number_input("Poids soulevé (lbs)", value=135)
+        reps = st.number_input("Nombre de Reps", value=8)
+        rpe = st.slider("Difficulté (RPE 1-10)", 1, 10, 8)
+        
+        if st.form_submit_button("Enregistrer la performance"):
+            one_rm = poids * (1 + reps / 30)
+            st.session_state.logs.append({
+                "Date": pd.Timestamp.now().strftime("%Y-%m-%d"),
+                "Exercice": exer,
+                "Poids": poids,
+                "Reps": reps,
+                "1RM Est.": round(one_rm, 1)
+            })
+            st.balloons()
+            st.success("Séance enregistrée !")
+
+# --- ONGLET 3 : GUIDE MUSCULAIRE ---
+with tab3:
+    st.header("Anatomie & Exercices")
+    c1, c2, c3 = st.columns(3)
+    if c1.button("Pectoraux"): st.session_state.selection_muscle = "Pectoraux"
+    if c2.button("Dos"): st.session_state.selection_muscle = "Dos"
+    if c3.button("Jambes"): st.session_state.selection_muscle = "Jambes"
+    if c1.button("Épaules"): st.session_state.selection_muscle = "Épaules"
+    if c2.button("Abdos"): st.session_state.selection_muscle = "Abdos"
+
+    if st.session_state.selection_muscle:
+        m = st.session_state.selection_muscle
+        st.markdown(f"### 🎯 {m}")
+        st.info(f"**Exercice :** {exercices_info[m]['ex']}")
+        st.write(exercices_info[m]['desc'])
+
+# --- ONGLET 4 : ANALYSE VIDÉO ---
+with tab4:
+    st.header("Analyse de Forme IA")
+    video_file = st.file_uploader("Prends ou choisis une vidéo", type=["mp4", "mov"])
+    if video_file:
+        st.video(video_file)
+        st.warning("Analyse IA : Garde le dos bien droit et contrôle la descente.")
+
+# --- ONGLET 5 : CALENDRIER (Le nouveau style) ---
 with tab5:
     st.header("📅 Agenda de l'Athlète")
-    st.write("Sélectionne une date dans le calendrier pour ajouter ou lire une note.")
-
-    # 1. LE CALENDRIER VISUEL (Style celui de ta photo)
-    # On crée une colonne pour centrer le calendrier
+    
     col_cal, col_note = st.columns([1, 1])
     
     with col_cal:
-        date_choisie = st.date_input(
-            "Clique sur une date :",
-            date.today(),
-            help="Sélectionne le jour que tu souhaites noter"
-        )
+        # Le calendrier cliquable
+        date_choisie = st.date_input("Sélectionne une date :", date.today())
     
     date_str = str(date_choisie)
 
-    # 2. LA ZONE DE NOTE
     with col_note:
         st.subheader(f"Note du {date_choisie.strftime('%d/%m/%Y')}")
+        note_existante = st.session_state.notes_calendrier.get(date_str, "")
+        nouvelle_note = st.text_area("Ecris tes détails ici...", value=note_existante, height=150)
         
-        # On récupère la note existante s'il y en a une
-        note_actuelle = st.session_state.notes_calendrier.get(date_str, "")
-        
-        nouvelle_note = st.text_area(
-            "Ecris tes détails (poids, exercices, ressenti...)", 
-            value=note_actuelle,
-            height=150,
-            placeholder="Ex: Aujourd'hui séance jambes, genou stable."
-        )
-        
-        if st.button("Enregistrer la note"):
+        if st.button("Sauvegarder"):
             st.session_state.notes_calendrier[date_str] = nouvelle_note
-            st.success("Note sauvegardée !")
-
-    # 3. RÉCAPITULATIF RAPIDE
-    st.divider()
-    if st.session_state.notes_calendrier:
-        with st.expander("📖 Voir toutes mes notes passées"):
-            # On trie pour avoir les plus récentes en haut
-            for d_key in sorted(st.session_state.notes_calendrier.keys(), reverse=True):
-                if st.session_state.notes_calendrier[d_key].strip():
-                    st.markdown(f"**Le {d_key} :**")
-                    st.info(st.session_state.notes_calendrier[d_key])
-    else:
-        st.write("Aucune note pour le moment.")
-
-# (Le reste du code pour les autres onglets reste identique à ton app précédente)
+            st.success("Note enregistrée !")

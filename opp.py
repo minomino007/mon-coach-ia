@@ -344,14 +344,12 @@ with tab2:
                 st.session_state.last_voice_ts = v_ts
                 with st.spinner("L'IA analyse ta voix..."):
                     data = analyser_texte_vocal(v_text)
-                    # Mettre à jour les états pour l'affichage
                     st.session_state.serie_zone = data.get("zone", "Pectoraux")
                     st.session_state.serie_exercice = data.get("exercice", "")
                     st.session_state.voice_poids = int(data.get("poids", 135))
                     st.session_state.voice_reps = int(data.get("reps", 8))
                     st.session_state.ai_message = data.get("message", "Série ajoutée automatiquement !")
                     
-                    # AJOUT AUTOMATIQUE DE LA SÉRIE
                     st.session_state.temp_workout.append({
                         "Date": str(date_seance), 
                         "Zone": st.session_state.serie_zone,
@@ -446,14 +444,46 @@ with tab2:
             st.session_state.temp_workout = []
             st.rerun()
 
-# --- AUTRES ONGLETS ---
-with tab3: st.header("👤 Guide Technique"); st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y" )
-with tab4: st.header("🎥 Vision IA"); up = st.file_uploader("Upload", type=["mp4", "mov"]); st.video(up) if up else None
+# --- ONGLET 3 : GUIDE TECHNIQUE ---
+with tab3: 
+    st.header("👤 Guide Technique")
+    st.write("Sélectionne une zone pour voir les exercices et les conseils techniques.")
+    
+    guide_zone = st.selectbox("Choisir une zone", zones_disponibles, key="guide_zone_select")
+    
+    zone_to_options = {
+        "Pectoraux": chest_options,
+        "Dos": back_options,
+        "Jambes": leg_options,
+        "Épaules": shoulder_options,
+        "Abdos": abs_options,
+        "Bras": arm_options
+    }
+    
+    exercices_guide = zone_to_options.get(guide_zone, [])
+    
+    if exercices_guide:
+        st.subheader(f"Exercices pour : {guide_zone}")
+        for ex in exercices_guide:
+            with st.expander(f"📖 {ex}"):
+                st.write(f"Voici comment réaliser correctement l'exercice : **{ex}**.")
+                st.info("💡 Conseil : Garde une forme stricte et contrôle la charge.")
+                st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y" )
+
+# --- ONGLET 4 : VISION IA ---
+with tab4: 
+    st.header("🎥 Vision IA")
+    up = st.file_uploader("Upload", type=["mp4", "mov"])
+    if up:
+        st.video(up)
+
+# --- ONGLET 5 : CALENDRIER / HISTORIQUE ---
 with tab5:
     st.header("📅 Historique")
     d_cal = st.date_input("Consulter", date.today())
     df_g = pd.DataFrame(st.session_state.logs)
     if not df_g.empty:
         seance = df_g[df_g['Date'] == str(d_cal)]
-        if not seance.empty: st.table(seance)
+        if not seance.empty: 
+            st.table(seance)
     st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""), key="note_hist")

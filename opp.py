@@ -1,9 +1,17 @@
 import streamlit as st
 import pandas as pd
 from datetime import date
+import openai  # Ajouté pour l'IA
+from streamlit_mic_recorder import mic_recorder  # Ajouté pour le micro
 
-# 1. CONFIGURATION
+# 1. CONFIGURATION & SECRETS
 st.set_page_config(page_title="Gym AI Agent PRO", layout="centered", page_icon="🏋️")
+
+# Connexion à ta clé API cachée dans les Secrets de Streamlit
+if "OPENAI_API_KEY" in st.secrets:
+    openai.api_key = st.secrets["OPENAI_API_KEY"]
+else:
+    st.error("⚠️ La clé API est manquante dans les Secrets de Streamlit.")
 
 # 2. DICTIONNAIRE DE TRADUCTION COMPLET
 languages = {
@@ -64,7 +72,7 @@ if 'user_profile' not in st.session_state:
         "objectif": "Prise de masse", "poids": 205, "blessures": "Aucune", "niveau": "Intermédiaire"
     }
 
-# 4. LISTE DES 15 EXERCICES PECTORAUX
+# 4. LISTE DES EXERCICES
 chest_options = [
     "Développé couché", "Développé incliné", "Développé décliné", 
     "Développé haltères", "Écarté couché", "Écarté incliné", 
@@ -74,7 +82,6 @@ chest_options = [
 ]
 
 L = languages[st.session_state.lang]
-
 st.title("🤖 Mon Gym AI Agent")
 
 # 5. ONGLETS
@@ -94,22 +101,24 @@ with tab1:
     col_m2.metric(L["obj_field"], prof['objectif'])
     col_m3.metric(L["age_field"], f"{prof['age']}")
 
-    with st.expander(L["edit_prof"]):
-        with st.form("edit_profile_form"):
-            n = st.text_input(L["name_field"], value=prof["nom"])
-            c_f1, c_f2 = st.columns(2)
-            a = c_f1.number_input(L["age_field"], value=prof["age"])
-            h = c_f2.text_input(L["height_field"], value=prof["grandeur"])
-            p = c_f1.number_input(L["weight"], value=prof["poids"])
-            obj = c_f2.selectbox(L["obj_field"], L["goals"])
-            b = st.text_area(L["inj_field"], value=prof["blessures"])
-            if st.form_submit_button(L["save"]):
-                st.session_state.user_profile.update({"nom": n, "age": a, "grandeur": h, "poids": p, "objectif": obj, "blessures": b})
-                st.rerun()
-
 # --- ONGLET 2 : SÉANCE DU JOUR ---
 with tab2:
     st.header(L["workout_header"])
+    
+    # --- AJOUT DU MICRO ---
+    st.write("🎙️ **Commande Vocale** : Appuie, dis ton exercice, et relâche.")
+    audio_record = mic_recorder(
+        start_prompt="🔴 Commencer l'enregistrement",
+        stop_prompt="🟢 Terminer (Analyse en cours...)",
+        key="gym_mic"
+    )
+
+    if audio_record:
+        st.audio(audio_record['bytes']) # Affiche l'audio pour vérification
+        # Ici, dans la prochaine étape, nous ajouterons l'extraction automatique des données
+        st.info("Audio capturé ! (La transcription sera active dès que la clé API sera validée)")
+
+    st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
     
     with st.form("add_set_form_final", clear_on_submit=True):
@@ -131,44 +140,18 @@ with tab2:
         if cb1.button(L["validate"], type="primary"):
             st.session_state.logs.extend(st.session_state.temp_workout)
             st.session_state.temp_workout = []
-            st.success("Entraînement enregistré dans le calendrier !")
+            st.success("Entraînement enregistré !")
             st.balloons()
         if cb2.button(L["clear"]):
             st.session_state.temp_workout = []
             st.rerun()
 
-# --- ONGLET 3 : GUIDE ---
-with tab3:
-    st.header("👤 Guide")
-    if st.button("Démonstration Pectoraux"):
-        st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
-
-# --- ONGLET 4 : VISION ---
-with tab4:
-    st.header("🎥 Vision IA")
-    up = st.file_uploader("Upload", type=["mp4", "mov"])
-    if up: st.video(up)
-
-# --- ONGLET 5 : CALENDRIER (CONSULTATION DES SÉANCES) ---
+# --- ONGLET 5 : CALENDRIER ---
 with tab5:
-    st.header("📅 Historique des entraînements")
-    d_cal = st.date_input("Choisir une date pour voir la séance", date.today(), key="date_input_calendar")
-    
+    st.header("📅 Historique")
+    d_cal = st.date_input("Date", date.today(), key="date_input_calendar")
     df_global = pd.DataFrame(st.session_state.logs)
     if not df_global.empty:
         seance_du_jour = df_global[df_global['Date'] == str(d_cal)]
-        
         if not seance_du_jour.empty:
-            st.success(f"Séance trouvée pour le {d_cal}")
             st.table(seance_du_jour[["Zone", "Exercice", "Poids", "Reps"]])
-        else:
-            st.info("Aucun entraînement enregistré pour cette date.")
-    else:
-        st.info("L'historique est vide.")
-
-    st.divider()
-    st.subheader("📝 Notes personnelles")
-    n_cal = st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""))
-    if st.button(L["save"], key="save_note_cal"):
-        st.session_state.notes_calendrier[str(d_cal)] = n_cal
-        st.success("Note enregistrée !")

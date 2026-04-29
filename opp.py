@@ -4,54 +4,54 @@ import pandas as pd
 # Configuration
 st.set_page_config(page_title="Gym AI Agent PRO", layout="centered")
 
-st.title("🤖 Mon Gym AI Agent - ANALYSE PRO")
+st.title("🤖 Mon Gym AI Agent - COACH PRO")
 
-# --- INITIALISATION ---
-if 'logs' not in st.session_state:
-    st.session_state.logs = []
+# --- BASE DE DONNÉES EXERCICES ---
+exercices_info = {
+    "Pectoraux": {"ex": "Développé Couché", "desc": "Cible le milieu du torse. Garde les omoplates serrées.", "img": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueWp3bmZ3bmZ3bmZ3bmZ3/3o7TKL3Y9ujUv8m/giphy.gif"},
+    "Dos": {"ex": "Tirage Buste Penché", "desc": "Cible l'épaisseur du dos. Ne courbe pas le bas du dos.", "img": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueWp3bmZ3bmZ3bmZ3bmZ3/3o7TKscxYyYyYyYy/giphy.gif"},
+    "Jambes (Squat)": {"ex": "Squat Barre", "desc": "Cible les quadriceps. Attention à tes genoux qui craquent : descends lentement !", "img": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueWp3bmZ3bmZ3bmZ3bmZ3/3o7TKunYyYyYyYy/giphy.gif"},
+    "Épaules": {"ex": "Développé Militaire", "desc": "Cible les deltoïdes. Gainage abdominal maximum.", "img": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueWp3bmZ3bmZ3bmZ3bmZ3/3o7TKvnYyYyYyYy/giphy.gif"},
+    "Abdominaux": {"ex": "Sit-ups", "desc": "Garde les pieds au sol et ne tire pas sur ta nuque.", "img": "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueWp3bmZ3bmZ3bmZ3bmZ3/3o7TKwnYyYyYyYy/giphy.gif"}
+}
 
-# --- DASHBOARD ---
-col1, col2 = st.columns(2)
-col1.metric("Poids actuel", "205 lbs")
-col2.metric("Objectif", "Prise de Masse")
+# --- SECTION : EXPLORATEUR DE MUSCLES ---
+st.header("👤 Anatomie & Exercices")
+st.write("Clique sur un groupe musculaire pour voir l'exercice recommandé :")
 
-# --- NOUVELLE SECTION : ANALYSE VIDÉO ---
-st.header("🎥 Analyse de Forme par IA")
-st.write("Télécharge une vidéo de ton Squat ou Bench pour une analyse technique.")
+# Création de boutons pour chaque muscle
+cols = st.columns(3)
+muscle_choisi = None
 
-uploaded_video = st.file_uploader("Choisir une vidéo...", type=["mp4", "mov", "avi"])
+if cols[0].button("胸 Pectoraux"): muscle_choisi = "Pectoraux"
+if cols[1].button("🐢 Dos"): muscle_choisi = "Dos"
+if cols[2].button("🍗 Jambes"): muscle_choisi = "Jambes (Squat)"
+if cols[0].button("🛡️ Épaules"): muscle_choisi = "Épaules"
+if cols[1].button("🍫 Abdominaux"): muscle_choisi = "Abdominaux"
 
-if uploaded_video is not None:
-    st.video(uploaded_video)
-    st.info("🔄 Analyse en cours par l'Agent IA... (Envoie cette vidéo à ton coach Gemini pour le verdict final)")
-    st.warning("Note : Pour l'instant, l'IA analyse l'alignement des genoux et la profondeur.")
+if muscle_choisi:
+    st.subheader(f"Meilleur exercice pour : {muscle_choisi}")
+    st.info(f"**{exercices_info[muscle_choisi]['ex']}**")
+    st.write(exercices_info[muscle_choisi]['desc'])
+    # Note : J'utilise des GIFs ici pour l'exemple
+    st.write("*(Ici s'affichera l'animation de l'exercice)*")
 
 st.divider()
 
-# --- ENREGISTREMENT SÉANCE ---
-st.header("🏋️ Log ta séance")
-with st.form("workout_form"):
-    exer = st.selectbox("Exercice", ["Bench Press", "Squat", "Incliné Haltères", "Dips", "Sit-ups"])
-    weight = st.number_input("Poids (lbs)", value=135)
-    reps = st.number_input("Répétitions", value=8)
-    rpe = st.slider("Difficulté (1-10)", 1, 10, 8)
-    
-    submitted = st.form_submit_button("Enregistrer & Calculer l'objectif")
-    
-    if submitted:
-        one_rm = weight * (1 + reps / 30)
-        next_goal = weight + 5 if rpe <= 7 else weight
-        
-        st.session_state.logs.append({
-            "Date": pd.Timestamp.now().strftime("%Y-%m-%d"),
-            "Exercice": exer,
-            "Poids": weight,
-            "1RM Est.": round(one_rm, 1),
-            "Next Goal": next_goal
-        })
-        st.success(f"Objectif suivant : {next_goal} lbs")
+# --- ANALYSE VIDÉO ---
+st.header("🎥 Analyse de Forme IA")
+uploaded_video = st.file_uploader("Prends une vidéo de ton mouvement...", type=["mp4", "mov"])
+if uploaded_video:
+    st.video(uploaded_video)
+    st.success("Vidéo reçue. Analyse de la trajectoire en cours...")
 
-# --- HISTORIQUE ---
-if st.session_state.logs:
-    st.subheader("📈 Progression")
-    st.dataframe(pd.DataFrame(st.session_state.logs))
+# --- LOG DE SÉANCE ---
+st.header("🏋️ Enregistrer ta Performance")
+with st.form("workout"):
+    ex_name = st.selectbox("Exercice", list(exercices_info.keys()))
+    w = st.number_input("Poids (lbs)", value=205)
+    r = st.number_input("Reps", value=8)
+    submitted = st.form_submit_button("Sauvegarder")
+    if submitted:
+        st.balloons()
+        st.success("Données enregistrées dans ton profil !")

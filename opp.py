@@ -103,3 +103,72 @@ with tab1:
             p = c_f1.number_input(L["weight"], value=prof["poids"])
             obj = c_f2.selectbox(L["obj_field"], L["goals"])
             b = st.text_area(L["inj_field"], value=prof["blessures"])
+            if st.form_submit_button(L["save"]):
+                st.session_state.user_profile.update({"nom": n, "age": a, "grandeur": h, "poids": p, "objectif": obj, "blessures": b})
+                st.rerun()
+
+# --- ONGLET 2 : SÉANCE DU JOUR ---
+with tab2:
+    st.header(L["workout_header"])
+    date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
+    
+    with st.form("add_set_form_final", clear_on_submit=True):
+        zone = st.selectbox(L["zone_label"], ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"])
+        ex = st.selectbox(L["ex_label"], chest_options) if zone == "Pectoraux" else st.text_input(L["ex_label"])
+        col_w, col_r = st.columns(2)
+        w_input = col_w.number_input(L["weight"], value=135)
+        r_input = col_r.number_input(L["reps"], value=8)
+        
+        if st.form_submit_button(L["add_set"]):
+            st.session_state.temp_workout.append({
+                "Date": str(date_seance), "Zone": zone, "Exercice": ex, "Poids": w_input, "Reps": r_input
+            })
+
+    if st.session_state.temp_workout:
+        st.subheader("Séries temporaires")
+        st.dataframe(pd.DataFrame(st.session_state.temp_workout), use_container_width=True)
+        cb1, cb2 = st.columns(2)
+        if cb1.button(L["validate"], type="primary"):
+            st.session_state.logs.extend(st.session_state.temp_workout)
+            st.session_state.temp_workout = []
+            st.success("Entraînement enregistré dans le calendrier !")
+            st.balloons()
+        if cb2.button(L["clear"]):
+            st.session_state.temp_workout = []
+            st.rerun()
+
+# --- ONGLET 3 : GUIDE ---
+with tab3:
+    st.header("👤 Guide")
+    if st.button("Démonstration Pectoraux"):
+        st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
+
+# --- ONGLET 4 : VISION ---
+with tab4:
+    st.header("🎥 Vision IA")
+    up = st.file_uploader("Upload", type=["mp4", "mov"])
+    if up: st.video(up)
+
+# --- ONGLET 5 : CALENDRIER (CONSULTATION DES SÉANCES) ---
+with tab5:
+    st.header("📅 Historique des entraînements")
+    d_cal = st.date_input("Choisir une date pour voir la séance", date.today(), key="date_input_calendar")
+    
+    df_global = pd.DataFrame(st.session_state.logs)
+    if not df_global.empty:
+        seance_du_jour = df_global[df_global['Date'] == str(d_cal)]
+        
+        if not seance_du_jour.empty:
+            st.success(f"Séance trouvée pour le {d_cal}")
+            st.table(seance_du_jour[["Zone", "Exercice", "Poids", "Reps"]])
+        else:
+            st.info("Aucun entraînement enregistré pour cette date.")
+    else:
+        st.info("L'historique est vide.")
+
+    st.divider()
+    st.subheader("📝 Notes personnelles")
+    n_cal = st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""))
+    if st.button(L["save"], key="save_note_cal"):
+        st.session_state.notes_calendrier[str(d_cal)] = n_cal
+        st.success("Note enregistrée !")

@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 api_key_val = st.secrets["OPENAI_API_KEY"]
-client = openai.OpenAI(api_key=api_key_val, base_url="https://openrouter.ai/api/v1")
+client = openai.OpenAI(api_key=api_key_val, base_url="https://openrouter.ai/api/v1" )
 
 # ==========================================
 # 2. SYSTÈME DE TRADUCTION
@@ -43,7 +43,7 @@ languages = {
         "age_field": "Âge",
         "height_field": "Grandeur",
         "goals": ["Prise de masse", "Perte de gras", "Force", "Endurance"],
-        "voice_instruction": "🎙️ Clique sur le bouton micro, parle, et les champs se remplissent tout seuls !",
+        "voice_instruction": "🎙️ Clique sur le bouton micro, parle, et l'IA remplit tout automatiquement !",
         "cal_title": "📅 Calendrier d'Activités",
         "detail_title": "🔎 Détail de la séance"
     },
@@ -68,7 +68,7 @@ languages = {
         "age_field": "Age",
         "height_field": "Height",
         "goals": ["Muscle Gain", "Fat Loss", "Strength", "Endurance"],
-        "voice_instruction": "🎙️ Click the mic button, speak, and fields fill automatically!",
+        "voice_instruction": "🎙️ Click the mic button, speak, and AI fills everything automatically!",
         "cal_title": "📅 Activity Calendar",
         "detail_title": "🔎 Workout Details"
     }
@@ -93,6 +93,7 @@ if 'voice_reps' not in st.session_state: st.session_state.voice_reps = 8
 if 'texte_vocal' not in st.session_state: st.session_state.texte_vocal = ""
 if 'serie_zone' not in st.session_state: st.session_state.serie_zone = "Pectoraux"
 if 'serie_exercice' not in st.session_state: st.session_state.serie_exercice = ""
+if 'last_voice_input' not in st.session_state: st.session_state.last_voice_input = ""
 
 chest_options = [
     "Développé couché", "Développé incliné", "Développé décliné",
@@ -104,14 +105,23 @@ chest_options = [
 zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"]
 
 # ==========================================
-# 4. FONCTION ANALYSE TEXTE VOCAL
+# 4. FONCTION ANALYSE IA
 # ==========================================
 def analyser_texte_vocal(texte):
-    prompt = f"""Extraire les infos de musculation du texte suivant : "{texte}". 
-    Répondre UNIQUEMENT en JSON valide avec ces clés : zone, exercice, poids (nombre entier), reps (nombre entier).
+    prompt = f"""Tu es un assistant expert en musculation. Analyse la demande de l'utilisateur : "{texte}".
+    Extraire les informations suivantes et répondre UNIQUEMENT en JSON valide.
+    
     Zones possibles : Pectoraux, Dos, Jambes, Épaules, Abdos.
-    Si l'exercice est pour les pectoraux, utilise un nom de cette liste : {chest_options}
-    Exemple de réponse : {{"zone": "Pectoraux", "exercice": "Développé couché", "poids": 180, "reps": 10}}"""
+    Si l'exercice concerne les pectoraux, choisis l'option la plus proche dans cette liste : {chest_options}.
+    
+    Clés JSON requises :
+    - "zone": (string) La zone musculaire identifiée.
+    - "exercice": (string) Le nom de l'exercice.
+    - "poids": (int) Le poids mentionné (défaut 135 si non spécifié).
+    - "reps": (int) Le nombre de répétitions (défaut 8 si non spécifié).
+    - "message": (string) Un court message d'encouragement ou de confirmation de l'assistant.
+
+    Exemple : {{"zone": "Pectoraux", "exercice": "Développé couché", "poids": 180, "reps": 10, "message": "Super série ! C'est noté."}}"""
 
     response = client.chat.completions.create(
         model="openai/gpt-3.5-turbo",
@@ -144,7 +154,6 @@ with tab1:
 
     st.divider()
 
-    # OPTION MODIFIER LE PROFIL (DÉPLACÉE ICI)
     with st.expander(L["edit_prof"]):
         new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
         if new_lang != st.session_state.lang:
@@ -163,9 +172,7 @@ with tab1:
                 st.session_state.user_profile.update({"nom": n, "age": a, "grandeur": h, "poids": p, "objectif": obj, "blessures": b})
                 st.rerun()
 
-    # CALENDRIER VISUEL
     st.subheader(L["cal_title"])
-    
     today = date.today()
     cal_obj = calendar.Calendar(firstweekday=6)
     month_days = cal_obj.monthdatescalendar(today.year, today.month)
@@ -176,7 +183,6 @@ with tab1:
             with cols[i]:
                 day_label = f"**{day.day}**" if day != today else f"**{day.day}** 🌟"
                 st.write(day_label)
-                
                 df_logs = pd.DataFrame(st.session_state.logs)
                 if not df_logs.empty:
                     day_str = str(day)
@@ -197,45 +203,127 @@ with tab2:
     st.header(L["workout_header"])
     st.write(L["voice_instruction"])
 
-    st.components.v1.html("""
+    # Capturer la valeur du composant HTML
+    voice_data = st.components.v1.html("""
         <style>
-            #mic-btn { background-color: #ff4b4b; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; }
-            #result-box { margin-top: 10px; padding: 10px; background: #1e1e1e; color: #00ff88; border-radius: 8px; font-size: 15px; min-height: 40px; }
+            .btn-container { display: flex; gap: 10px; }
+            #mic-btn { background-color: #ff4b4b; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; flex: 2; transition: 0.3s; }
+            #stop-btn { background-color: #333; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; flex: 1; display: none; transition: 0.3s; }
+            #mic-btn:hover { background-color: #e63939; }
+            #stop-btn:hover { background-color: #555; }
+            #result-box { margin-top: 10px; padding: 10px; background: #1e1e1e; color: #00ff88; border-radius: 8px; font-size: 15px; min-height: 40px; border: 1px solid #333; }
         </style>
-        <button id="mic-btn" onclick="startListening()">🎙️ Parler</button>
-        <div id="result-box">En attente...</div>
+        <div class="btn-container">
+            <button id="mic-btn" onclick="startListening()">🎙️ Dicter ma séance</button>
+            <button id="stop-btn" onclick="stopListening()">⏹️ Arrêter</button>
+        </div>
+        <div id="result-box">En attente de ta voix...</div>
         <script>
+        let recognition;
+        let lastFinal = "";
+        
         function startListening() {
             const btn = document.getElementById('mic-btn');
+            const stopBtn = document.getElementById('stop-btn');
             const box = document.getElementById('result-box');
-            btn.textContent = '🔴 Écoute en cours...';
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                box.textContent = "❌ Ton navigateur ne supporte pas la reconnaissance vocale.";
+                return;
+            }
+
+            btn.textContent = '🔴 Je t'écoute...';
+            btn.style.backgroundColor = '#222';
+            stopBtn.style.display = 'block';
+            lastFinal = "";
+            
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
             recognition.lang = 'fr-FR';
+            recognition.interimResults = true;
+            recognition.continuous = true;
+
             recognition.onresult = function(event) {
-                const texte = event.results[0][0].transcript;
-                box.textContent = '✅ Entendu : ' + texte;
-                btn.textContent = '🎙️ Parler';
-                window.parent.postMessage({type: 'streamlit:setComponentValue', value: texte}, '*');
+                let interim_transcript = '';
+                let final_transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        final_transcript += event.results[i][0].transcript;
+                    } else {
+                        interim_transcript += event.results[i][0].transcript;
+                    }
+                }
+                if (final_transcript) lastFinal += final_transcript;
+                box.textContent = '🎤 ' + (lastFinal || interim_transcript);
             };
+
+            recognition.onerror = function(event) {
+                box.textContent = "❌ Erreur : " + event.error;
+                resetUI();
+            };
+
+            recognition.onend = function() {
+                resetUI();
+            };
+
             recognition.start();
         }
+
+        function stopListening() {
+            if (recognition) {
+                recognition.stop();
+                const box = document.getElementById('result-box');
+                const textToSend = lastFinal || box.textContent.replace('🎤 ', '');
+                if (textToSend && textToSend !== "En attente de ta voix...") {
+                    window.parent.postMessage({type: 'streamlit:setComponentValue', value: textToSend}, '*');
+                }
+            }
+            resetUI();
+        }
+
+        function resetUI() {
+            const btn = document.getElementById('mic-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            btn.textContent = '🎙️ Dicter ma séance';
+            btn.style.backgroundColor = '#ff4b4b';
+            stopBtn.style.display = 'none';
+        }
         </script>
-    """, height=120)
+    """, height=130)
 
-    st.write("**Ou écris ta séance directement ici :**")
-    texte_input = st.text_input("Ex: Pectoraux, développé couché, 180 lbs, 10 reps", value=st.session_state.texte_vocal, key="texte_vocal_input")
+    # Logique de traitement automatique si une nouvelle voix est détectée
+    if voice_data and voice_data != st.session_state.get('last_voice_input', ''):
+        st.session_state.last_voice_input = voice_data
+        try:
+            with st.spinner("L'IA analyse ta voix..."):
+                data = analyser_texte_vocal(voice_data)
+                st.session_state.serie_zone = data.get("zone", "Pectoraux")
+                st.session_state.serie_exercice = data.get("exercice", "")
+                st.session_state.voice_poids = int(data.get("poids", 135))
+                st.session_state.voice_reps = int(data.get("reps", 8))
+                st.session_state.ai_message = data.get("message", "J'ai bien compris ta séance !")
+                st.rerun()
+        except Exception as e:
+            st.error(f"Erreur d'analyse vocale : {e}")
 
-    if st.button("🤖 Analyser", type="primary"):
+    st.write("**💬 Ou écris ta séance ici :**")
+    texte_input = st.text_input("Ex: J'ai fait du bench press à 200 lbs pour 12 reps", value="", key="texte_manual_input", placeholder="Parle-moi de ta séance...")
+
+    if st.button("🤖 Analyser le texte", type="secondary", use_container_width=True):
         if texte_input:
             try:
-                with st.spinner("L'IA analyse..."):
+                with st.spinner("L'assistant réfléchit..."):
                     data = analyser_texte_vocal(texte_input)
                     st.session_state.serie_zone = data.get("zone", "Pectoraux")
                     st.session_state.serie_exercice = data.get("exercice", "")
                     st.session_state.voice_poids = int(data.get("poids", 135))
                     st.session_state.voice_reps = int(data.get("reps", 8))
+                    st.session_state.ai_message = data.get("message", "C'est prêt !")
                     st.rerun()
             except Exception as e: st.error(f"Erreur : {e}")
+
+    if 'ai_message' in st.session_state and st.session_state.ai_message:
+        st.chat_message("assistant").write(st.session_state.ai_message)
+        st.session_state.ai_message = ""
 
     st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
@@ -286,7 +374,7 @@ with tab2:
             st.rerun()
 
 # --- AUTRES ONGLETS ---
-with tab3: st.header("👤 Guide Technique"); st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y")
+with tab3: st.header("👤 Guide Technique"); st.video("https://www.youtube.com/watch?v=gRVjAtPip0Y" )
 with tab4: st.header("🎥 Vision IA"); up = st.file_uploader("Upload", type=["mp4", "mov"]); st.video(up) if up else None
 with tab5:
     st.header("📅 Historique")

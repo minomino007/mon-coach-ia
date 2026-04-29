@@ -277,7 +277,9 @@ with tab2:
                 isListening = false;
                 recognition.stop();
                 const box = document.getElementById('result-box');
-                const textToSend = lastFinal || box.textContent.replace('🎤 ', '');
+                const currentText = box.textContent.replace('🎤 ', '');
+                const textToSend = lastFinal || currentText;
+                
                 if (textToSend && textToSend !== "En attente de ta voix...") {{
                     const payload = JSON.stringify({{text: textToSend, ts: Date.now()}});
                     window.parent.postMessage({{type: 'streamlit:setComponentValue', value: payload}}, '*');

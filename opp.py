@@ -365,11 +365,11 @@ with tab2:
                 st.session_state.last_voice_ts = v_ts
                 with st.spinner("L'IA analyse ta voix..."):
                     data = analyser_texte_vocal(v_text)
-                    st.session_state.serie_zone = data.get("zone", "Pectoraux")
-                    st.session_state.serie_exercice = data.get("exercice", "")
-                    st.session_state.voice_poids = int(data.get("poids", 135))
-                    st.session_state.voice_reps = int(data.get("reps", 8))
-                    st.session_state.ai_message = data.get("message", "")
+                    st.session_state.serie_zone = data.get("zone", "Pectoraux") or "Pectoraux"
+                    st.session_state.serie_exercice = data.get("exercice", "") or ""
+                    st.session_state.voice_poids = int(data.get("poids") or 135)
+                    st.session_state.voice_reps = int(data.get("reps") or 8)
+                    st.session_state.ai_message = data.get("message", "") or ""
                     st.session_state.temp_workout.append({
                         "Date": str(date.today()),
                         "Zone": st.session_state.serie_zone,
@@ -393,11 +393,11 @@ with tab2:
             with st.spinner("Analyse en cours..."):
                 try:
                     data = analyser_texte_vocal(texte_input)
-                    st.session_state.serie_zone = data.get("zone", "Pectoraux")
-                    st.session_state.serie_exercice = data.get("exercice", "")
-                    st.session_state.voice_poids = int(data.get("poids", 135))
-                    st.session_state.voice_reps = int(data.get("reps", 8))
-                    st.session_state.ai_message = data.get("message", "")
+                    st.session_state.serie_zone = data.get("zone", "Pectoraux") or "Pectoraux"
+                    st.session_state.serie_exercice = data.get("exercice", "") or ""
+                    st.session_state.voice_poids = int(data.get("poids") or 135)
+                    st.session_state.voice_reps = int(data.get("reps") or 8)
+                    st.session_state.ai_message = data.get("message", "") or ""
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erreur : {e}")

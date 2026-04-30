@@ -96,7 +96,35 @@ chest_options = [
     "Pompes inclinées", "Pompes déclinées", "Dips (buste penché)",
     "Pullover haltère", "Pullover à la poulie", "Machine chest press"
 ]
-zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos"]
+arm_options = [
+    "Curl barre EZ", "Curl haltères", "Curl marteau",
+    "Curl incliné", "Curl pupitre (Larry Scott)", "Curl concentration",
+    "Extension triceps poulie haute", "Barre au front", "Extension triceps haltère",
+    "Dips machine", "Pompes diamant", "Kickback haltère"
+]
+back_options = [
+    "Tractions", "Tirage poitrine poulie haute", "Tirage horizontal poulie basse",
+    "Rowing barre", "Rowing haltère", "Tirage bûcheron",
+    "Pull-over poulie haute", "Lombaires (banc)", "Soulevé de terre",
+    "Shrugs haltères", "Tirage vertical prise serrée"
+]
+leg_options = [
+    "Squat barre", "Presse à cuisses", "Fentes haltères",
+    "Leg extension", "Leg curl assis", "Leg curl allongé",
+    "Hack squat", "Soulevé de terre jambes tendues", "Mollets debout",
+    "Mollets assis", "Adducteurs machine"
+]
+shoulder_options = [
+    "Développé militaire", "Développé haltères", "Élévations latérales",
+    "Oiseau haltères", "Tirage menton", "Développé Arnold",
+    "Face pull", "Élévations frontales"
+]
+abs_options = [
+    "Crunch au sol", "Relevé de jambes", "Planche (gainage)",
+    "Russian twist", "Crunch poulie haute", "Roulette à abdos",
+    "Mountain climbers", "V-ups"
+]
+zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos", "Bras"]
 
 # Dictionnaire des GIFs par exercice
 exercise_animations = {

@@ -29,7 +29,7 @@ languages = {
         "save": "Sauvegarder",
         "workout_header": "🏋️ Enregistrer une séance",
         "add_set": "➕ Ajouter cette série",
-        "validate": "✅ Enregistrer l'entraînement complet",
+        "validate": "✅ Enregistrer l\'entraînement complet",
         "clear": "❌ Tout effacer",
         "lang_label": "Choisir la langue",
         "weight": "Poids (lbs)",
@@ -44,11 +44,11 @@ languages = {
         "height_field": "Grandeur",
         "goals": ["Prise de masse", "Perte de gras", "Force", "Endurance"],
         "voice_instruction": "🎙️ Clique sur le bouton micro, parle, et les champs se remplissent tout seuls !",
-        "cal_title": "📅 Calendrier d'Activités",
+        "cal_title": "📅 Calendrier d\'Activités",
         "detail_title": "🔎 Détail de la séance"
     },
     "English": {
-        "tabs": ["📊 Profile", "🏋️ Today's Workout", "👤 Guide", "🎥 Vision", "📅 Calendar"],
+        "tabs": ["📊 Profile", "🏋️ Today\'s Workout", "👤 Guide", "🎥 Vision", "📅 Calendar"],
         "prof_header": "👤 Your Fitness Profile",
         "edit_prof": "Edit Profile",
         "save": "Save",
@@ -83,7 +83,7 @@ if 'notes_calendrier' not in st.session_state: st.session_state.notes_calendrier
 if 'temp_workout' not in st.session_state: st.session_state.temp_workout = []
 if 'user_profile' not in st.session_state:
     st.session_state.user_profile = {
-        "nom": "Athlète", "age": 25, "grandeur": "5'10",
+        "nom": "Athlète", "age": 25, "grandeur": "5\'10",
         "objectif": "Prise de masse", "poids": 205, "blessures": "Aucune", "niveau": "Intermédiaire"
     }
 if 'voice_zone' not in st.session_state: st.session_state.voice_zone = "Pectoraux"
@@ -133,7 +133,7 @@ abs_options = [
 ]
 zones_disponibles = ["Pectoraux", "Dos", "Jambes", "Épaules", "Abdos", "Bras"]
 
-# Dictionnaire des vidéos par exercice (Liens YouTube courts et efficaces)
+# Dictionnaire des vidéos par exercice
 exercise_videos = {
     "Développé couché": "https://www.youtube.com/watch?v=rT7DgCr-3pg",
     "Développé incliné": "https://www.youtube.com/watch?v=SrqOu55lrYU",
@@ -202,218 +202,249 @@ exercise_videos = {
     "V-ups": "https://www.youtube.com/watch?v=7UVp79vW_L0"
 }
 
+# Dictionnaire des animations (GIFs ) par exercice
+exercise_animations = {
+    "Développé couché": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0025-EIeI8Vf.gif",
+    "Développé incliné": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0047-3TZduzM.gif",
+    "Développé décliné": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0033-GrO65fd.gif",
+    "Développé haltères": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0289-SpYC0Kp.gif",
+    "Tractions": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0652-lBDjFxJ.gif",
+    "Tirage poitrine poulie haute": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/2330-LEprlgG.gif",
+    "Soulevé de terre": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0032-ila4NZS.gif",
+    "Squat barre": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0043-qXTaZnJ.gif",
+    "Presse à cuisses": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/2287-V07qpXy.gif",
+    "Leg extension": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0585-my33uHU.gif",
+    "Leg curl assis": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0599-Zg3XY7P.gif",
+    "Développé militaire": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0040-33AzZeV.gif",
+    "Élévations latérales": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0334-DsgkuIt.gif",
+    "Face pull": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0372-l1z0Y4Y.gif",
+    "Curl barre EZ": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0294-NbVPDMW.gif",
+    "Curl haltères": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/1651-1VpF8db.gif",
+    "Curl marteau": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0313-slDvUAU.gif",
+    "Extension triceps poulie haute": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/2406-ThKP69G.gif",
+    "Barre au front": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0010-8K0w2yA.gif",
+    "Dips machine": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0031-25GPyDY.gif",
+    "Crunch au sol": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0972-tZkGYZ9.gif",
+    "Relevé de jambes": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/0472-I3tsCnC.gif",
+    "Planche (gainage )": "https://raw.githubusercontent.com/hasaneyldrm/exercises-dataset/main/videos/3544-5VXmnV5.gif"
+}
+
 # ==========================================
 # 4. FONCTION ANALYSE IA
 # ==========================================
 def analyser_texte_vocal(texte ):
-    prompt = f"""Tu es un assistant expert en musculation. Analyse la demande de l'utilisateur : "{texte}".
-    Extraire les informations suivantes et répondre UNIQUEMENT en JSON valide.
+    prompt = f"""En tant qu\'assistant d\'entraînement, analyse le texte suivant pour extraire la zone musculaire, l\'exercice spécifique, le poids en livres (lbs) et le nombre de répétitions. Si le poids ou les répétitions ne sont pas mentionnés, utilise des valeurs par défaut raisonnables (ex: poids 135, reps 8). Si l\'exercice n\'est pas clair, suggère un exercice courant pour la zone mentionnée. Retourne le résultat au format JSON. Les zones musculaires possibles sont : Pectoraux, Dos, Jambes, Épaules, Abdos, Bras. Les exercices sont : {', '.join(chest_options + arm_options + back_options + leg_options + shoulder_options + abs_options)}. Si tu ne trouves pas l\'exercice exact, trouve le plus proche ou un exercice commun pour la zone.\n\nTexte à analyser : "{texte}"\nFormat de sortie JSON: {{"zone": "<zone_musculaire>", "exercice": "<exercice_specifique>", "poids": <poids_en_lbs>, "reps": <nombre_de_repetitions>, "message": "<message_de_confirmation_ou_suggestion>"}}\n"""
     
-    Zones possibles : Pectoraux, Dos, Jambes, Épaules, Abdos, Bras.
-    Choisis l'option la plus proche dans ces listes selon la zone :
-    - Pectoraux: {chest_options}
-    - Bras: {arm_options}
-    - Dos: {back_options}
-    - Jambes: {leg_options}
-    - Épaules: {shoulder_options}
-    - Abdos: {abs_options}
-    
-    Clés JSON requises :
-    - "zone": (string) La zone musculaire identifiée.
-    - "exercice": (string) Le nom de l'exercice.
-    - "poids": (int) Le poids mentionné (défaut 135 si non spécifié).
-    - "reps": (int) Le nombre de répétitions (défaut 8 si non spécifié).
-    - "message": (string) Un court message d'encouragement ou de confirmation de l'assistant.
-
-    Exemple : {{"zone": "Pectoraux", "exercice": "Développé couché", "poids": 180, "reps": 10, "message": "Super série ! C'est noté."}}"""
-
     response = client.chat.completions.create(
-        model="openai/gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
+        model="gpt-4.1-mini",  # Ou un autre modèle compatible OpenRouter
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "Tu es un assistant d\'entraînement qui extrait des informations de texte."},
+            {"role": "user", "content": prompt}
+        ]
     )
-    contenu = response.choices[0].message.content
-    contenu = contenu.strip().replace("```json", "").replace("```", "").strip()
-    return json.loads(contenu)
+    return json.loads(response.choices[0].message.content)
 
+# ==========================================
+# 5. INTERFACE UTILISATEUR STREAMLIT
+# ==========================================
 L = languages[st.session_state.lang]
-
-# ==========================================
-# 5. INTERFACE UTILISATEUR
-# ==========================================
-st.title("🤖 Mon Gym AI Agent")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(L["tabs"])
 
 # --- ONGLET 1 : PROFIL ---
 with tab1:
     st.header(L["prof_header"])
-    prof = st.session_state.user_profile
-    col_m1, col_m2, col_m3 = st.columns(3)
-    col_m1.metric(L["weight"], f"{prof['poids']} lbs")
-    col_m2.metric(L["obj_field"], prof['objectif'])
-    col_m3.metric(L["age_field"], f"{prof['age']}")
+    
+    # Affichage du profil
+    st.write(f"**{L['name_field']} :** {st.session_state.user_profile['nom']}")
+    st.write(f"**{L['age_field']} :** {st.session_state.user_profile['age']} ans")
+    st.write(f"**{L['height_field']} :** {st.session_state.user_profile['grandeur']}")
+    st.write(f"**{L['weight']} :** {st.session_state.user_profile['poids']} lbs")
+    st.write(f"**{L['obj_field']} :** {st.session_state.user_profile['objectif']}")
+    st.write(f"**{L['inj_field']} :** {st.session_state.user_profile['blessures']}")
 
-    st.write(f"**{L['name_field']} :** {prof['nom']} | **{L['height_field']} :** {prof['grandeur']}")
-    st.warning(f"🩹 **{L['inj_field']} :** {prof['blessures']}")
+    if st.button(L["edit_prof"]):
+        st.session_state.edit_profile = True
 
-    st.divider()
-
-    with st.expander(L["edit_prof"]):
-        new_lang = st.selectbox(L["lang_label"], ["Français", "English"], index=0 if st.session_state.lang == "Français" else 1)
-        if new_lang != st.session_state.lang:
-            # Sécurité pour la traduction de l'objectif lors du changement de langue
-            old_goals = languages[st.session_state.lang]["goals"]
-            new_goals = languages[new_lang]["goals"]
-            try:
-                idx = old_goals.index(st.session_state.user_profile["objectif"])
-                st.session_state.user_profile["objectif"] = new_goals[idx]
-            except:
-                st.session_state.user_profile["objectif"] = new_goals[0]
-                
-            st.session_state.lang = new_lang
-            st.rerun()
+    if st.session_state.get('edit_profile', False):
+        with st.form("profile_form"):
+            st.session_state.user_profile["nom"] = st.text_input(L["name_field"], value=st.session_state.user_profile["nom"])
+            st.session_state.user_profile["age"] = st.number_input(L["age_field"], value=st.session_state.user_profile["age"], min_value=15, max_value=99)
+            st.session_state.user_profile["grandeur"] = st.text_input(L["height_field"], value=st.session_state.user_profile["grandeur"])
+            st.session_state.user_profile["poids"] = st.number_input(L["weight"], value=st.session_state.user_profile["poids"], min_value=50, max_value=500)
             
-        with st.form("edit_profile_form_complete"):
-            n = st.text_input(L["name_field"], value=prof["nom"])
-            c_f1, c_f2 = st.columns(2)
-            a = c_f1.number_input(L["age_field"], value=prof["age"])
-            h = c_f2.text_input(L["height_field"], value=prof["grandeur"])
-            p = c_f1.number_input(L["weight"], value=prof["poids"])
+            # Correction du bug de langue pour l'objectif
+            current_goal_lang = st.session_state.user_profile["objectif"]
+            if st.session_state.lang == "English":
+                # Convertir l'objectif actuel en anglais si nécessaire pour l'affichage
+                if current_goal_lang == "Prise de masse": current_goal_lang = "Muscle Gain"
+                elif current_goal_lang == "Perte de gras": current_goal_lang = "Fat Loss"
+                elif current_goal_lang == "Force": current_goal_lang = "Strength"
+                elif current_goal_lang == "Endurance": current_goal_lang = "Endurance"
+            else:
+                # Convertir l'objectif actuel en français si nécessaire pour l'affichage
+                if current_goal_lang == "Muscle Gain": current_goal_lang = "Prise de masse"
+                elif current_goal_lang == "Fat Loss": current_goal_lang = "Perte de gras"
+                elif current_goal_lang == "Strength": current_goal_lang = "Force"
+                elif current_goal_lang == "Endurance": current_goal_lang = "Endurance"
+
+            obj_index = L["goals"].index(current_goal_lang) if current_goal_lang in L["goals"] else 0
+            st.session_state.user_profile["objectif"] = st.selectbox(L["obj_field"], L["goals"], index=obj_index)
             
-            # Sécurité pour l'index de l'objectif
-            try:
-                obj_idx = L["goals"].index(prof["objectif"])
-            except:
-                obj_idx = 0
-                
-            obj = c_f2.selectbox(L["obj_field"], L["goals"], index=obj_idx)
-            b = st.text_area(L["inj_field"], value=prof["blessures"])
+            st.session_state.user_profile["blessures"] = st.text_area(L["inj_field"], value=st.session_state.user_profile["blessures"])
             if st.form_submit_button(L["save"]):
-                st.session_state.user_profile.update({"nom": n, "age": a, "grandeur": h, "poids": p, "objectif": obj, "blessures": b})
+                st.session_state.edit_profile = False
                 st.rerun()
 
+    st.divider()
     st.subheader(L["cal_title"])
-    today = date.today()
-    cal_obj = calendar.Calendar(firstweekday=6)
-    month_days = cal_obj.monthdatescalendar(today.year, today.month)
-    
-    for week in month_days:
-        cols = st.columns(7)
-        for i, day in enumerate(week):
-            with cols[i]:
-                day_label = f"**{day.day}**" if day != today else f"**{day.day}** 🌟"
-                st.write(day_label)
-                df_logs = pd.DataFrame(st.session_state.logs)
-                if not df_logs.empty:
-                    day_str = str(day)
-                    work_this_day = df_logs[df_logs['Date'] == day_str]
-                    if not work_this_day.empty:
-                        zones_faites = work_this_day['Zone'].unique()
-                        for z in zones_faites:
-                            if st.button(z, key=f"prof_cal_{day}_{z}", use_container_width=True):
-                                st.session_state.selected_date_prof = day_str
+    df_logs = pd.DataFrame(st.session_state.logs)
+    if not df_logs.empty:
+        df_logs['Date'] = pd.to_datetime(df_logs['Date'])
+        df_logs['Mois'] = df_logs['Date'].dt.to_period('M')
+        
+        current_month = date.today().replace(day=1)
+        if 'current_calendar_month' not in st.session_state:
+            st.session_state.current_calendar_month = current_month
 
-    if 'selected_date_prof' in st.session_state:
-        st.info(f"{L['detail_title']} : {st.session_state.selected_date_prof}")
-        det_df = pd.DataFrame(st.session_state.logs)
-        st.table(det_df[det_df['Date'] == st.session_state.selected_date_prof][["Exercice", "Poids", "Reps"]])
+        col_prev, col_month, col_next = st.columns([1, 2, 1])
+        with col_prev:
+            if st.button("◀️", key="prev_month_cal"): 
+                st.session_state.current_calendar_month -= pd.DateOffset(months=1)
+                st.rerun()
+        with col_month:
+            st.markdown(f"<h3 style='text-align: center;'>{st.session_state.current_calendar_month.strftime('%B %Y')}</h3>", unsafe_allow_html=True)
+        with col_next:
+            if st.button("▶️", key="next_month_cal"): 
+                st.session_state.current_calendar_month += pd.DateOffset(months=1)
+                st.rerun()
+
+        cal = calendar.Calendar()
+        month_days = cal.monthdatescalendar(st.session_state.current_calendar_month.year, st.session_state.current_calendar_month.month)
+
+        st.markdown("<style>div.st-emotion-cache-1r6dm1x {padding: 0px !important;}</style>", unsafe_allow_html=True)
+        st.markdown("<style>div.st-emotion-cache-1r6dm1x > div {padding: 0px !important;}</style>", unsafe_allow_html=True)
+
+        st.markdown("<div style='display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold;'>" +
+                    "<span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span>" +
+                    "</div>", unsafe_allow_html=True)
+
+        for week in month_days:
+            week_str = "<div style='display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;'>"
+            for day in week:
+                day_str = str(day.day)
+                style = "padding: 5px; border: 1px solid #eee; min-height: 50px; position: relative;"
+                
+                if day.month != st.session_state.current_calendar_month.month:
+                    style += "color: #aaa;"
+                
+                if not df_logs[df_logs['Date'].dt.date == day].empty:
+                    style += "background-color: #d4edda; border-color: #28a745;"
+                    day_str += "  
+🏋️"
+                
+                if day == date.today():
+                    style += "border: 2px solid #007bff;"
+
+                week_str += f"<span style='{style}'>{day_str}</span>"
+            week_str += "</div>"
+            st.markdown(week_str, unsafe_allow_html=True)
 
 # --- ONGLET 2 : SÉANCE DU JOUR ---
 with tab2:
     st.header(L["workout_header"])
-    st.write(L["voice_instruction"])
+    st.markdown(L["voice_instruction"])
 
-    voice_data = st.components.v1.html(f"""
-        <style>
-            .btn-container {{ display: flex; gap: 10px; }}
-            #mic-btn {{ background-color: #ff4b4b; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; flex: 2; transition: 0.3s; }}
-            #stop-btn {{ background-color: #333; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; flex: 1; display: none; transition: 0.3s; }}
-            #mic-btn:hover {{ background-color: #e63939; }}
-            #stop-btn:hover {{ background-color: #555; }}
-            #result-box {{ margin-top: 10px; padding: 10px; background: #1e1e1e; color: #00ff88; border-radius: 8px; font-size: 15px; min-height: 40px; border: 1px solid #333; }}
-        </style>
-        <div class="btn-container">
-            <button id="mic-btn" onclick="startListening()">🎙️ Dicter ma séance</button>
-            <button id="stop-btn" onclick="stopListening()">⏹️ Arrêter</button>
-        </div>
-        <div id="result-box">En attente de ta voix...</div>
+    voice_data = st.empty().html("""
+        <button id='mic-btn' style='background-color: #ff4b4b; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer;'>🎙️ Cliquer pour dicter ta séance</button>
+        <button id='stop-btn' style='background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; display: none; margin-left: 10px;'>⏹️ Arrêter</button>
+        <p id='output' style='margin-top: 10px;'></p>
         <script>
+        const micBtn = document.getElementById('mic-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const output = document.getElementById('output');
         let recognition;
-        let lastFinal = "";
         let isListening = false;
-        
-        function startListening() {{
-            if (isListening) return;
-            const btn = document.getElementById('mic-btn');
-            const stopBtn = document.getElementById('stop-btn');
-            const box = document.getElementById('result-box');
-            
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {{
-                box.textContent = "❌ Ton navigateur ne supporte pas la reconnaissance vocale.";
-                return;
-            }}
+        let finalTranscript = '';
 
-            isListening = true;
-            btn.textContent = '🔴 Je t\\'écoute...';
-            btn.style.backgroundColor = '#222';
-            stopBtn.style.display = 'block';
-            lastFinal = "";
-            
-            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = 'fr-FR';
-            recognition.interimResults = true;
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
             recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'fr-FR'; // Langue par défaut
 
-            recognition.onresult = function(event) {{
-                let interim_transcript = '';
-                let final_transcript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {{
-                    if (event.results[i].isFinal) {{
-                        final_transcript += event.results[i][0].transcript;
-                    }} else {{
-                        interim_transcript += event.results[i][0].transcript;
-                    }}
-                }}
-                if (final_transcript) lastFinal += final_transcript;
-                box.textContent = '🎤 ' + (lastFinal || interim_transcript);
-            }};
+            recognition.onstart = function() {
+                isListening = true;
+                micBtn.textContent = '🔴 Écoute en cours...';
+                micBtn.style.backgroundColor = '#28a745';
+                stopBtn.style.display = 'inline-block';
+                output.textContent = 'En attente de ta voix...';
+                finalTranscript = '';
+            };
 
-            recognition.onerror = function(event) {{
-                box.textContent = "❌ Erreur : " + event.error;
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                output.textContent = finalTranscript + interimTranscript;
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error', event);
+                output.textContent = 'Erreur de reconnaissance vocale. Réessaie.';
                 resetUI();
-            }};
+            };
 
-            recognition.onend = function() {{
-                if (isListening) resetUI();
-            }};
+            recognition.onend = function() {
+                if (isListening) { // Si l'écoute s'est arrêtée sans clic sur stop
+                    sendTextToStreamlit(finalTranscript);
+                }
+                resetUI();
+            };
 
-            recognition.start();
-        }}
+            micBtn.onclick = function() {
+                if (!isListening) {
+                    recognition.start();
+                }
+            };
 
-        function stopListening() {{
-            if (recognition && isListening) {{
-                isListening = false;
-                recognition.stop();
-                const box = document.getElementById('result-box');
-                const currentText = box.textContent.replace('🎤 ', '');
-                const textToSend = lastFinal || currentText;
-                
-                if (textToSend && textToSend !== "En attente de ta voix...") {{
-                    const payload = JSON.stringify({{text: textToSend, ts: Date.now()}});
-                    window.parent.postMessage({{type: 'streamlit:setComponentValue', value: payload}}, '*');
-                }}
-            }}
+            stopBtn.onclick = function() {
+                if (isListening) {
+                    recognition.stop();
+                    sendTextToStreamlit(finalTranscript);
+                }
+            };
+
+        } else {
+            micBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
+            output.textContent = 'Reconnaissance vocale non supportée par ce navigateur.';
+        }
+
+        function sendTextToStreamlit(text) {
+            const lastFinal = text.trim();
+            const currentText = output.textContent.trim();
+            const textToSend = lastFinal || currentText;
+            if (textToSend && textToSend !== "En attente de ta voix...") {
+                const payload = JSON.stringify({text: textToSend, ts: Date.now()});
+                window.parent.postMessage({type: 'streamlit:setComponentValue', value: payload}, '*');
+            }
             resetUI();
-        }}
-
-        function resetUI() {{
+        }
+        function resetUI() {
             isListening = false;
             const btn = document.getElementById('mic-btn');
             const stopBtn = document.getElementById('stop-btn');
-            btn.textContent = '🎙️ Dicter ma séance';
+            btn.textContent = '🎙️ Cliquer pour dicter ta séance';
             btn.style.backgroundColor = '#ff4b4b';
             stopBtn.style.display = 'none';
-        }}
+        }
         </script>
     """, height=130)
 
@@ -422,7 +453,6 @@ with tab2:
             v_json = json.loads(voice_data)
             v_text = v_json.get("text", "")
             v_ts = v_json.get("ts", 0)
-            
             if v_text and v_ts != st.session_state.get('last_voice_ts', 0):
                 st.session_state.last_voice_ts = v_ts
                 with st.spinner("L'IA analyse ta voix..."):
@@ -432,21 +462,15 @@ with tab2:
                     st.session_state.voice_poids = int(data.get("poids", 135))
                     st.session_state.voice_reps = int(data.get("reps", 8))
                     st.session_state.ai_message = data.get("message", "Série ajoutée automatiquement !")
-                    
                     st.session_state.temp_workout.append({
-                        "Date": str(date_seance), 
-                        "Zone": st.session_state.serie_zone,
-                        "Exercice": st.session_state.serie_exercice, 
-                        "Poids": st.session_state.voice_poids, 
-                        "Reps": st.session_state.voice_reps
+                        "Date": str(date.today()), "Zone": st.session_state.serie_zone,
+                        "Exercice": st.session_state.serie_exercice, "Poids": st.session_state.voice_poids, "Reps": st.session_state.voice_reps
                     })
                     st.rerun()
-        except:
-            pass
+        except: pass
 
     st.write("**💬 Ou écris ta séance ici :**")
-    texte_input = st.text_input("Ex: J'ai fait du bench press à 200 lbs pour 12 reps", value="", key="texte_manual_input", placeholder="Parle-moi de ta séance...")
-
+    texte_input = st.text_input("Ex: J'ai fait du bench press à 200 lbs pour 12 reps", value="", key="texte_manual_input")
     if st.button("🤖 Analyser le texte", type="secondary", use_container_width=True):
         if texte_input:
             try:
@@ -466,34 +490,19 @@ with tab2:
 
     st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")
-
     st.subheader("📌 Étape 1 — Choisir l'exercice")
     col_z, col_e = st.columns(2)
     with col_z:
         zone_index = zones_disponibles.index(st.session_state.serie_zone) if st.session_state.serie_zone in zones_disponibles else 0
         serie_zone = st.selectbox(L["zone_label"], zones_disponibles, index=zone_index, key="select_zone")
     with col_e:
-        if serie_zone == "Pectoraux":
-            ex_index = chest_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in chest_options else 0
-            serie_exercice = st.selectbox(L["ex_label"], chest_options, index=ex_index)
-        elif serie_zone == "Bras":
-            ex_index = arm_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in arm_options else 0
-            serie_exercice = st.selectbox(L["ex_label"], arm_options, index=ex_index)
-        elif serie_zone == "Dos":
-            ex_index = back_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in back_options else 0
-            serie_exercice = st.selectbox(L["ex_label"], back_options, index=ex_index)
-        elif serie_zone == "Jambes":
-            ex_index = leg_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in leg_options else 0
-            serie_exercice = st.selectbox(L["ex_label"], leg_options, index=ex_index)
-        elif serie_zone == "Épaules":
-            ex_index = shoulder_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in shoulder_options else 0
-            serie_exercice = st.selectbox(L["ex_label"], shoulder_options, index=ex_index)
-        elif serie_zone == "Abdos":
-            ex_index = abs_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in abs_options else 0
-            serie_exercice = st.selectbox(L["ex_label"], abs_options, index=ex_index)
+        options_map = {"Pectoraux": chest_options, "Bras": arm_options, "Dos": back_options, "Jambes": leg_options, "Épaules": shoulder_options, "Abdos": abs_options}
+        current_options = options_map.get(serie_zone, [])
+        if current_options:
+            ex_index = current_options.index(st.session_state.serie_exercice) if st.session_state.serie_exercice in current_options else 0
+            serie_exercice = st.selectbox(L["ex_label"], current_options, index=ex_index)
         else:
             serie_exercice = st.text_input(L["ex_label"], value=st.session_state.serie_exercice)
-
     st.session_state.serie_zone = serie_zone
     st.session_state.serie_exercice = serie_exercice
 
@@ -502,18 +511,13 @@ with tab2:
     series_actuelles = [s for s in st.session_state.temp_workout if s["Exercice"] == serie_exercice]
     for i, s in enumerate(series_actuelles):
         st.write(f"✅ **Série {i+1}** — {s['Poids']} lbs × {s['Reps']} reps")
-
     with st.form(f"serie_form", clear_on_submit=True):
         col_w, col_r = st.columns(2)
         w_input = col_w.number_input(L["weight"], value=st.session_state.voice_poids)
         r_input = col_r.number_input(L["reps"], value=st.session_state.voice_reps)
         if st.form_submit_button("➕ Ajouter la série"):
-            st.session_state.temp_workout.append({
-                "Date": str(date_seance), "Zone": st.session_state.serie_zone,
-                "Exercice": st.session_state.serie_exercice, "Poids": w_input, "Reps": r_input
-            })
+            st.session_state.temp_workout.append({"Date": str(date_seance), "Zone": st.session_state.serie_zone, "Exercice": st.session_state.serie_exercice, "Poids": w_input, "Reps": r_input})
             st.rerun()
-
     if st.session_state.temp_workout:
         st.subheader("📊 Ta séance complète")
         st.dataframe(pd.DataFrame(st.session_state.temp_workout))
@@ -530,28 +534,18 @@ with tab2:
 # --- ONGLET 3 : GUIDE TECHNIQUE ---
 with tab3: 
     st.header("👤 Guide Technique")
-    st.write("Sélectionne une zone pour voir les exercices et les conseils techniques.")
-    
     guide_zone = st.selectbox("Choisir une zone", zones_disponibles, key="guide_zone_select")
-    
-    zone_to_options = {
-        "Pectoraux": chest_options,
-        "Dos": back_options,
-        "Jambes": leg_options,
-        "Épaules": shoulder_options,
-        "Abdos": abs_options,
-        "Bras": arm_options
-    }
-    
-    exercices_guide = zone_to_options.get(guide_zone, [])
-    
+    options_map = {"Pectoraux": chest_options, "Dos": back_options, "Jambes": leg_options, "Épaules": shoulder_options, "Abdos": abs_options, "Bras": arm_options}
+    exercices_guide = options_map.get(guide_zone, [])
     if exercices_guide:
-        st.subheader(f"Exercices pour : {guide_zone}")
         for ex in exercices_guide:
             with st.expander(f"📖 {ex}"):
-                st.write(f"Voici comment réaliser correctement l'exercice : **{ex}**.")
+                gif_url = exercise_animations.get(ex)
+                if gif_url:
+                    st.image(gif_url, caption=f"Animation : {ex}", use_container_width=True)
+                st.write(f"Voici comment réaliser correctement l\'exercice : **{ex}**.")
                 st.info("💡 Conseil : Garde une forme stricte et contrôle la charge.")
-                
+                st.write("**🎥 Vidéo explicative :**")
                 video_url = exercise_videos.get(ex, "https://www.youtube.com/watch?v=gRVjAtPip0Y" )
                 st.video(video_url)
 
@@ -559,8 +553,7 @@ with tab3:
 with tab4: 
     st.header("🎥 Vision IA")
     up = st.file_uploader("Upload", type=["mp4", "mov"])
-    if up:
-        st.video(up)
+    if up: st.video(up)
 
 # --- ONGLET 5 : CALENDRIER / HISTORIQUE ---
 with tab5:
@@ -569,6 +562,5 @@ with tab5:
     df_g = pd.DataFrame(st.session_state.logs)
     if not df_g.empty:
         seance = df_g[df_g['Date'] == str(d_cal)]
-        if not seance.empty: 
-            st.table(seance)
+        if not seance.empty: st.table(seance)
     st.text_area("Note du jour", value=st.session_state.notes_calendrier.get(str(d_cal), ""), key="note_hist")

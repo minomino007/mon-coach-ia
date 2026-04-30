@@ -24,7 +24,7 @@ client = openai.OpenAI(api_key=api_key_val, base_url="https://openrouter.ai/api/
 # ==========================================
 languages = {
     "Français": {
-        "tabs": ["📊 Profil", "🏋️ Séance du jour", "👤 Guide", "🎥 Vision", "📅 Calendrier"],
+        "tabs": ["📊 Profil", "🏋️ Séance du jour", "👤 Guide", "🎥 Vision", "📅 Calendrier", "🤖 Coach IA"],
         "prof_header": "👤 Ton Profil Sportif",
         "edit_prof": "Modifier le profil",
         "save": "Sauvegarder",
@@ -49,7 +49,7 @@ languages = {
         "detail_title": "🔎 Détail de la séance"
     },
     "English": {
-        "tabs": ["📊 Profile", "🏋️ Today's Workout", "👤 Guide", "🎥 Vision", "📅 Calendar"],
+        "tabs": ["📊 Profile", "🏋️ Today's Workout", "👤 Guide", "🎥 Vision", "📅 Calendar", "🤖 AI Coach"],
         "prof_header": "👤 Your Fitness Profile",
         "edit_prof": "Edit Profile",
         "save": "Save",
@@ -95,6 +95,7 @@ if 'serie_zone' not in st.session_state: st.session_state.serie_zone = "Pectorau
 if 'serie_exercice' not in st.session_state: st.session_state.serie_exercice = ""
 if 'last_voice_ts' not in st.session_state: st.session_state.last_voice_ts = 0
 if 'ai_message' not in st.session_state: st.session_state.ai_message = ""
+if 'coach_messages' not in st.session_state: st.session_state.coach_messages = []
 
 # ==========================================
 # LISTES D'EXERCICES
@@ -205,7 +206,7 @@ def analyser_texte_vocal(texte):
 # ==========================================
 L = languages[st.session_state.lang]
 st.title("🤖 Mon Gym AI Agent")
-tab1, tab2, tab3, tab4, tab5 = st.tabs(L["tabs"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(L["tabs"])
 
 # ==========================================
 # ONGLET 1 : PROFIL
@@ -504,3 +505,86 @@ with tab5:
     if st.button(L["save"], key="save_note_calendar"):
         st.session_state.notes_calendrier[str(d_cal)] = n_cal
         st.success("Note enregistrée !")
+
+# ==========================================
+# ONGLET 6 : COACH IA
+# ==========================================
+with tab6:
+    st.header("🤖 Coach IA Personnel")
+    st.write("Ton coach connaît ton profil, tes objectifs, tes blessures et tout ton historique.")
+    st.divider()
+
+    prof = st.session_state.user_profile
+    df_logs = pd.DataFrame(st.session_state.logs)
+
+    historique_resume = "Aucun entrainement enregistre pour l'instant."
+    if not df_logs.empty:
+        lignes = []
+        for _, row in df_logs.tail(30).iterrows():
+            lignes.append(f"- {row['Date']} | {row['Zone']} | {row['Exercice']} | {row['Poids']} lbs x {row['Reps']} reps")
+        historique_resume = "\n".join(lignes)
+
+    system_prompt = (
+        "Tu es un coach de musculation expert, bienveillant et motivant. "
+        "Tu connais parfaitement ton athlete grace aux informations suivantes :\n\n"
+        f"PROFIL :\n"
+        f"- Nom : {prof.get('nom', 'Athlete')}\n"
+        f"- Age : {prof.get('age', '?')} ans\n"
+        f"- Grandeur : {prof.get('grandeur', '?')}\n"
+        f"- Poids : {prof.get('poids', '?')} lbs\n"
+        f"- Objectif : {prof.get('objectif', '?')}\n"
+        f"- Blessures : {prof.get('blessures', 'Aucune')}\n"
+        f"- Niveau : {prof.get('niveau', 'Intermediaire')}\n\n"
+        f"HISTORIQUE DES 30 DERNIERES SERIES :\n{historique_resume}\n\n"
+        "Utilise ces informations pour donner des conseils personnalises. "
+        "Tiens toujours compte des blessures et du niveau. "
+        "Sois encourageant, precis et pratique. "
+        "Reponds dans la meme langue que l'utilisateur."
+    )
+
+    for msg in st.session_state.coach_messages:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
+
+    if not st.session_state.coach_messages:
+        st.write("**Suggestions rapides :**")
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            if st.button("Cree-moi un plan d'entrainement", use_container_width=True, key="coach_plan"):
+                st.session_state.coach_messages.append({"role": "user", "content": "Cree-moi un plan d'entrainement personnalise base sur mon profil et mon objectif."})
+                st.rerun()
+            if st.button("Analyse ma progression", use_container_width=True, key="coach_prog"):
+                st.session_state.coach_messages.append({"role": "user", "content": "Analyse ma progression selon mon historique d'entrainement."})
+                st.rerun()
+        with col_s2:
+            if st.button("Conseils nutrition", use_container_width=True, key="coach_nutri"):
+                st.session_state.coach_messages.append({"role": "user", "content": "Donne-moi des conseils nutritionnels adaptes a mon objectif."})
+                st.rerun()
+            if st.button("Exercices avec mes blessures", use_container_width=True, key="coach_bless"):
+                st.session_state.coach_messages.append({"role": "user", "content": "Quels exercices puis-je faire en tenant compte de mes blessures ?"})
+                st.rerun()
+
+    user_input = st.chat_input("Pose une question a ton coach...")
+    if user_input:
+        st.session_state.coach_messages.append({"role": "user", "content": user_input})
+        st.rerun()
+
+    if st.session_state.coach_messages and st.session_state.coach_messages[-1]["role"] == "user":
+        with st.spinner("Ton coach reflechit..."):
+            try:
+                messages_api = [{"role": "system", "content": system_prompt}]
+                messages_api += st.session_state.coach_messages[-10:]
+                response = client.chat.completions.create(
+                    model="openai/gpt-3.5-turbo",
+                    messages=messages_api
+                )
+                coach_reply = response.choices[0].message.content
+                st.session_state.coach_messages.append({"role": "assistant", "content": coach_reply})
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erreur coach : {e}")
+
+    if st.session_state.coach_messages:
+        if st.button("Effacer la conversation", key="clear_coach"):
+            st.session_state.coach_messages = []
+            st.rerun()

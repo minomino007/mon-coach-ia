@@ -282,43 +282,85 @@ with tab2:
     st.header(L["workout_header"])
     st.markdown(L["voice_instruction"])
 
+    # ✅ MICRO — utilise un champ caché pour transférer le texte vers Streamlit
     voice_data = components.html("""
-        <button id='mic-btn' style='background-color:#ff4b4b;color:white;padding:10px 20px;border-radius:5px;border:none;cursor:pointer;'>🎙️ Dicter ma séance</button>
-        <button id='stop-btn' style='background-color:#007bff;color:white;padding:10px 20px;border-radius:5px;border:none;cursor:pointer;display:none;margin-left:10px;'>⏹️ Arrêter</button>
-        <p id='output' style='margin-top:10px;font-family:sans-serif;color:#00ff88;'></p>
+        <style>
+            .mic-row { display:flex; gap:10px; margin-bottom:8px; }
+            #mic-btn { background:#ff4b4b; color:white; padding:10px 22px; border-radius:6px; border:none; cursor:pointer; font-size:15px; }
+            #stop-btn { background:#007bff; color:white; padding:10px 18px; border-radius:6px; border:none; cursor:pointer; font-size:15px; display:none; }
+            #mic-btn:disabled { background:#888; cursor:not-allowed; }
+            #output { margin-top:8px; padding:8px; background:#1a1a1a; color:#00ff88; border-radius:6px; font-size:14px; min-height:32px; }
+        </style>
+        <div class="mic-row">
+            <button id="mic-btn" onclick="startMic()">🎙️ Dicter ma séance</button>
+            <button id="stop-btn" onclick="stopMic()">⏹️ Arrêter</button>
+        </div>
+        <div id="output">En attente...</div>
         <script>
-        const micBtn = document.getElementById('mic-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const output = document.getElementById('output');
-        let recognition; let isListening = false; let finalTranscript = '';
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'fr-FR';
-            recognition.onstart = () => { isListening = true; micBtn.textContent = '🔴 Écoute...'; stopBtn.style.display = 'inline-block'; };
-            recognition.onresult = (event) => {
-                let interim = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
-                    else interim += event.results[i][0].transcript;
-                }
-                output.textContent = finalTranscript + interim;
-            };
-            recognition.onend = () => { if (isListening) send(); };
-            micBtn.onclick = () => { if (!isListening) { finalTranscript = ''; recognition.start(); } };
-            stopBtn.onclick = () => { if (isListening) { isListening = false; recognition.stop(); } };
-            function send() {
-                const text = (finalTranscript || output.textContent).trim();
-                if (text) window.parent.postMessage({type:'streamlit:setComponentValue', value: JSON.stringify({text:text, ts:Date.now()})}, '*');
-                micBtn.textContent = '🎙️ Dicter ma séance'; stopBtn.style.display = 'none'; isListening = false;
-            }
-        } else { output.textContent = '❌ Navigateur non compatible. Utilise Chrome.'; }
-        </script>
-    """, height=130)
+        var recog = null;
+        var listening = false;
+        var finalText = '';
 
+        function startMic() {
+            if (listening) return;
+            var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) { document.getElementById('output').textContent = '❌ Utilise Chrome.'; return; }
+            finalText = '';
+            recog = new SpeechRec();
+            recog.lang = 'fr-FR';
+            recog.continuous = true;
+            recog.interimResults = true;
+            recog.onstart = function() {
+                listening = true;
+                document.getElementById('mic-btn').textContent = '🔴 Écoute...';
+                document.getElementById('mic-btn').disabled = true;
+                document.getElementById('stop-btn').style.display = 'inline-block';
+            };
+            recog.onresult = function(e) {
+                var interim = '';
+                for (var i = e.resultIndex; i < e.results.length; i++) {
+                    if (e.results[i].isFinal) { finalText += e.results[i][0].transcript; }
+                    else { interim += e.results[i][0].transcript; }
+                }
+                document.getElementById('output').textContent = '🎤 ' + finalText + interim;
+            };
+            recog.onerror = function(e) {
+                document.getElementById('output').textContent = '❌ Erreur: ' + e.error;
+                resetMic();
+            };
+            recog.onend = function() { resetMic(); };
+            recog.start();
+        }
+
+        function stopMic() {
+            if (recog && listening) {
+                listening = false;
+                recog.stop();
+                var text = finalText.trim();
+                if (text) {
+                    var payload = JSON.stringify({text: text, ts: Date.now()});
+                    window.parent.postMessage({type: 'streamlit:setComponentValue', value: payload}, '*');
+                    document.getElementById('output').textContent = '✅ Envoyé : ' + text;
+                }
+            }
+            resetMic();
+        }
+
+        function resetMic() {
+            listening = false;
+            document.getElementById('mic-btn').textContent = '🎙️ Dicter ma séance';
+            document.getElementById('mic-btn').disabled = false;
+            document.getElementById('stop-btn').style.display = 'none';
+        }
+        </script>
+    """, height=140)
+
+    # Traitement du résultat vocal
     if voice_data:
         try:
-            v_json = json.loads(voice_data)
-            v_text, v_ts = v_json.get("text", ""), v_json.get("ts", 0)
+            v_json = json.loads(str(voice_data))
+            v_text = v_json.get("text", "")
+            v_ts = v_json.get("ts", 0)
             if v_text and v_ts != st.session_state.last_voice_ts:
                 st.session_state.last_voice_ts = v_ts
                 with st.spinner("L'IA analyse ta voix..."):
@@ -342,17 +384,25 @@ with tab2:
         st.chat_message("assistant").write(st.session_state.ai_message)
         st.session_state.ai_message = ""
 
+    # ✅ ANALYSER LE TEXTE — champ séparé du micro
     st.write("**💬 Ou écris ta séance ici :**")
-    texte_input = st.text_input("Ex: Bench press 200 lbs 12 reps", key="manual_input")
-    if st.button("🤖 Analyser le texte", use_container_width=True):
-        if texte_input:
-            with st.spinner("Analyse..."):
-                data = analyser_texte_vocal(texte_input)
-                st.session_state.serie_zone = data.get("zone", "Pectoraux")
-                st.session_state.serie_exercice = data.get("exercice", "")
-                st.session_state.voice_poids = int(data.get("poids", 135))
-                st.session_state.voice_reps = int(data.get("reps", 8))
-                st.rerun()
+    col_txt, col_btn = st.columns([3, 1])
+    texte_input = col_txt.text_input("Ex: Bench press 200 lbs 12 reps", key="manual_input", label_visibility="collapsed")
+    if col_btn.button("🤖 Analyser"):
+        if texte_input.strip():
+            with st.spinner("Analyse en cours..."):
+                try:
+                    data = analyser_texte_vocal(texte_input)
+                    st.session_state.serie_zone = data.get("zone", "Pectoraux")
+                    st.session_state.serie_exercice = data.get("exercice", "")
+                    st.session_state.voice_poids = int(data.get("poids", 135))
+                    st.session_state.voice_reps = int(data.get("reps", 8))
+                    st.session_state.ai_message = data.get("message", "")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erreur : {e}")
+        else:
+            st.warning("Écris quelque chose avant d'analyser !")
 
     st.divider()
     date_seance = st.date_input(L["date_label"], date.today(), key="date_input_workout")

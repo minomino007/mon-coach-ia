@@ -4,6 +4,7 @@ from datetime import date
 import openai
 import json
 import calendar
+import streamlit.components.v1 as components
 
 # ==========================================
 # 1. CONFIGURATION DE LA PAGE & CLÉ API
@@ -15,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Utilisation du client OpenAI pré-configuré par Manus
+# Utilisation du client OpenAI pré-configuré
 client = openai.OpenAI()
 
 # ==========================================
@@ -246,7 +247,6 @@ with tab1:
             st.session_state.user_profile["poids"] = st.number_input(L["weight"], value=st.session_state.user_profile["poids"], min_value=50, max_value=500)
             
             current_goal = st.session_state.user_profile["objectif"]
-            # Mapping simple pour la traduction des objectifs
             goal_map = {"Prise de masse": "Muscle Gain", "Perte de gras": "Fat Loss", "Force": "Strength", "Endurance": "Endurance",
                         "Muscle Gain": "Prise de masse", "Fat Loss": "Perte de gras", "Strength": "Force", "Endurance": "Endurance"}
             if current_goal not in L["goals"] and current_goal in goal_map:
@@ -261,7 +261,6 @@ with tab1:
 
     st.divider()
     st.subheader(L["cal_title"])
-    # (Logique calendrier simplifiée pour la stabilité)
     st.info("Ton calendrier visuel est actif. Les jours avec séance sont marqués en vert.")
 
 # --- ONGLET 2 : SÉANCE DU JOUR ---
@@ -269,10 +268,11 @@ with tab2:
     st.header(L["workout_header"])
     st.markdown(L["voice_instruction"])
 
-    voice_data = st.empty().html("""
+    # Correction du TypeError en utilisant components.html
+    voice_data = components.html("""
         <button id='mic-btn' style='background-color: #ff4b4b; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer;'>🎙️ Cliquer pour dicter ta séance</button>
         <button id='stop-btn' style='background-color: #007bff; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; display: none; margin-left: 10px;'>⏹️ Arrêter</button>
-        <p id='output' style='margin-top: 10px;'></p>
+        <p id='output' style='margin-top: 10px; font-family: sans-serif;'></p>
         <script>
         const micBtn = document.getElementById('mic-btn');
         const stopBtn = document.getElementById('stop-btn');
@@ -394,3 +394,4 @@ with tab5:
     if not df.empty:
         s = df[df['Date'] == str(d)]
         if not s.empty: st.table(s)
+        
